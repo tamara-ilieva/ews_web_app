@@ -81,6 +81,25 @@ async def get_all_diseases(session: SessionDep,
     return DiseasesOut(data=diseases, count=len(diseases))
 
 
+@router.get("/dashboard")
+async def get_dashboard_images(session: SessionDep,
+                         # db: Optional[AsyncSession] = Depends(get_db)
+                         ):
+    stmt = select(Image).order_by(Image.created_at.desc()).limit(4)
+    query = session.execute(stmt)
+    images = query.scalars().all()
+    images_data = []
+    for image in images:
+        image_disease = session.execute(select(Diseases).where(Diseases.id == image.disease)).scalars().first()
+        images_data.append(ImageOut(id=image.id,
+                                    created_at=image.created_at,
+                                    updated_at=image.updated_at,
+                                    disease=image_disease.name if image_disease else "",
+                                    file_url=image.file_url,
+                                    ))
+    return ImagesOut(data=images_data, count=len(images))
+
+
 @router.get("/images")
 async def get_all_images(session: SessionDep,
                          # db: Optional[AsyncSession] = Depends(get_db)
