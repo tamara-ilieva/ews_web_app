@@ -22,6 +22,9 @@ from app.models.models import SQLModel
 # from .models.models import *
 from app.models.diseases import *
 from app.models.image import *
+from app.models.dynamic_images import *
+from app.models.static_images import *
+from app.models.uploaded_images import *
 from app.models.temperature import *
 from app.models.camera import *
 
