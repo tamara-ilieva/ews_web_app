@@ -16,7 +16,10 @@ class Image(SQLModel, table=True):
 
 class ImageOut(SQLModel):
     id: int
-    disease: str
+    predicted_disease: int
+    is_sick: bool
+    predicted_disease_human_input: int
+    is_sick_human_input: bool
     file_url: str
     created_at: datetime
     updated_at: datetime
