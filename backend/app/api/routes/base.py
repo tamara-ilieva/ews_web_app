@@ -80,6 +80,29 @@ async def get_all_diseases(session: SessionDep,
     diseases = query.scalars().all()
     return DiseasesOut(data=diseases, count=len(diseases))
 
+@router.post("/change-is-sick")
+async def change_is_sick(session: SessionDep, image_id: int, is_sick: bool):
+    stmt = select(Image).where(Image.id == image_id)
+    query = session.execute(stmt)
+    image = query.scalars().one()
+    if image:
+        image.is_sick_human_input = is_sick
+        session.commit()
+        return {"message": f"Updated image {image_id} successfully."}
+    else:
+        return {"error": "Image not found."}, 404
+
+@router.post("/change-disease")
+async def change_disease(session: SessionDep, image_id: int, disease_id: int):
+    stmt = select(Image).where(Image.id == image_id)
+    query = session.execute(stmt)
+    image = query.scalars().one()
+    if image:
+        image.predicted_disease_human_input = disease_id
+        session.commit()
+        return {"message": f"Updated image {image_id} successfully."}
+    else:
+        return {"error": "Image not found."}, 404
 
 @router.get("/dashboard")
 async def get_dashboard_images(session: SessionDep,
