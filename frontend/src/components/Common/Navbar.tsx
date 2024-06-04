@@ -5,7 +5,7 @@ import { FaPlus } from "react-icons/fa"
 import AddUser from "../Admin/AddUser";
 import AddItem from "../Items/AddItem";
 import AddDisease from "../Diseases/AddDisease";
-import AddImage from "../Images/AddImage";
+import AddStaticImage from "../Images/AddStaticImage";
 
 interface NavbarProps {
   type: string
@@ -41,7 +41,7 @@ const Navbar: React.FC<NavbarProps> = ({ type }) => {
         {type === "User" && <AddUser isOpen={addUserModal.isOpen} onClose={addUserModal.onClose} />}
         {type === "Item" && <AddItem isOpen={addItemModal.isOpen} onClose={addItemModal.onClose} />}
         {type === "Disease" && <AddDisease isOpen={addDiseaseModal.isOpen} onClose={addDiseaseModal.onClose} />}
-        {type === "Image" && <AddImage isOpen={addImageModal.isOpen} onClose={addImageModal.onClose} />}
+        {type === "Image" && <AddStaticImage isOpen={addImageModal.isOpen} onClose={addImageModal.onClose} />}
       </Flex>
     </>
   )

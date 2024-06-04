@@ -13,12 +13,14 @@ class Image(SQLModel, table=True):
     file_url: str
     created_at: datetime = Field(nullable=False)
     updated_at: datetime = Field(nullable=False)
+    # is_sick: bool = False
+    # confirmed: bool = False
 
 class ImageOut(SQLModel):
     id: int
-    predicted_disease: int
+    predicted_disease: str
     is_sick: bool
-    predicted_disease_human_input: int
+    predicted_disease_human_input: str
     is_sick_human_input: bool
     file_url: str
     created_at: datetime

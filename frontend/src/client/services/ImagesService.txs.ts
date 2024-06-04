@@ -27,7 +27,20 @@ export class ImagesService {
      * @returns ImageOut Successful Response
      * @throws ApiError
      */
-    public static uploadImage(formData: FormData): CancelablePromise<ImageOut> {
+    public static uploadStaticImage(formData: FormData): CancelablePromise<ImageOut> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/ews/upload-image/',
+            body: formData,
+            mediaType: 'multipart/form-data',
+            errors: {
+                422: `Validation Error`,
+                400: `Bad Request`,
+                500: `Server Error`,
+            },
+        });
+    }
+    public static uploadOfflineImage(formData: FormData): CancelablePromise<ImageOut> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/v1/ews/upload-image/',

@@ -23,7 +23,7 @@ interface AddImageProps {
     onClose: () => void;
 }
 
-const AddImage: React.FC<AddImageProps> = ({ isOpen, onClose }) => {
+const AddStaticImage: React.FC<AddImageProps> = ({ isOpen, onClose }) => {
     const queryClient = useQueryClient();
     const showToast = useCustomToast();
     const { register, handleSubmit, setValue, reset, formState: { isSubmitting } } = useForm<{ image: FileList }>({
@@ -35,7 +35,7 @@ const AddImage: React.FC<AddImageProps> = ({ isOpen, onClose }) => {
         register('image', { required: true });
     }, [register]);
 
-    const mutation = useMutation((formData: FormData) => ImagesService.uploadImage(formData), {
+    const mutation = useMutation((formData: FormData) => ImagesService.uploadStaticImage(formData), {
         onSuccess: () => {
             showToast("Success!", "Image uploaded successfully.", "success");
             reset();
@@ -87,4 +87,4 @@ const AddImage: React.FC<AddImageProps> = ({ isOpen, onClose }) => {
     );
 };
 
-export default AddImage;
+export default AddStaticImage;

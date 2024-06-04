@@ -59,24 +59,25 @@ function Images() {
                 <Thead>
                   <Tr>
                     <Th>ID</Th>
-                    <Th>Disease</Th>
+                    <Th>Predicted Disease</Th>
                     <Th>Image</Th>
                     <Th>Uploaded At</Th>
-                    {/*<Th>Actions</Th>*/}
+                    <Th>Actions</Th>
                   </Tr>
                 </Thead>
                 <Tbody>
                   {images.map((image) => (
                     <Tr key={image.id}>
                       <Td>{image.id}</Td>
-                      <Td>{image.disease}</Td>
+                      <Td>{image.predicted_disease}</Td>
                       <Td>
                         <ChakraImage src={image.file_url} alt="Disease" boxSize="100px" objectFit="cover" />
                       </Td>
                       <Td>{new Date(image.created_at).toLocaleDateString()}</Td>
-                      {/*<Td>*/}
-                      {/*  <ActionsMenu type={"Image"} value={image} />*/}
-                      {/*</Td>*/}
+                      <Td>
+                      {<ActionsMenu type={"Image"} value={image} />}
+
+                      </Td>
                     </Tr>
                   ))}
                 </Tbody>

@@ -12,7 +12,7 @@ from app.models.diseases import Diseases, CreateDisease, DiseasesOut
 from app.models.image import Image, ImageOut, ImagesOut
 from app.models.uploaded_images import UploadedImages, UploadedImageOut, UploadedImagesOut
 from app.models.static_images import StaticImages, StaticImageOut, StaticImagesOut
-from app.models.dynamic_images import DynamicImages, DynamicImageOut, DynamicImagesOut
+from app.models.dynamic_images import DynamicImage, DynamicImageOut, DynamicImagesOut
 from fastapi import APIRouter
 from fastapi import File, UploadFile
 from fastapi.responses import RedirectResponse
@@ -110,6 +110,32 @@ async def change_disease(session: SessionDep, image_id: int, disease_id: int):
 async def get_dashboard_images(session: SessionDep,
                          # db: Optional[AsyncSession] = Depends(get_db)
                          ):
+    stmt = select(DynamicImage).order_by(DynamicImage.created_at.desc()).limit(4)
+    query = session.execute(stmt)
+    images = query.scalars().all()
+    images_data = []
+    for image in images:
+        image_disease = session.execute(select(Diseases).where(Diseases.id == image.predicted_disease)).scalars().first()
+        human_image_disease = session.execute(select(Diseases).where(Diseases.id == image.predicted_disease_human_input)).scalars().first()
+        print(image)
+        print(image_disease)
+        print(human_image_disease)
+        images_data.append(ImageOut(id=image.id,
+                                    created_at=image.created_at,
+                                    updated_at=image.updated_at,
+                                    predicted_disease=image_disease.name if image_disease else "",
+                                    is_sick=image.is_sick,
+                                    predicted_disease_human_input=human_image_disease.name if human_image_disease else "",
+                                    is_sick_human_input=image.is_sick_human_input,
+                                    file_url=image.file_url,
+                                    ))
+    return ImagesOut(data=images_data, count=len(images))
+
+
+@router.get("/dashboard")
+async def get_dashboard_images(session: SessionDep,
+                         # db: Optional[AsyncSession] = Depends(get_db)
+                         ):
     stmt = select(Image).order_by(Image.created_at.desc()).limit(4)
     query = session.execute(stmt)
     images = query.scalars().all()
@@ -119,7 +145,10 @@ async def get_dashboard_images(session: SessionDep,
         images_data.append(ImageOut(id=image.id,
                                     created_at=image.created_at,
                                     updated_at=image.updated_at,
-                                    disease=image_disease.name if image_disease else "",
+                                    predicted_disease=image_disease.name if image_disease else "",
+                                    predicted_disease_human_input=image_disease.name if image_disease else 1,
+                                    is_sick_human_input=False,
+                                    is_sick=False,
                                     file_url=image.file_url,
                                     ))
     return ImagesOut(data=images_data, count=len(images))
@@ -138,10 +167,10 @@ async def get_all_images(session: SessionDep,
         images_data.append(ImageOut(id=image.id,
                                     created_at=image.created_at,
                                     updated_at=image.updated_at,
-                                    predicted_disease=image_disease.name if image_disease else 1,
-                                    predicted_disease_human_input = image_disease.name if image_disease else 1,
-                                    is_sick_human_input = False,
-                                    is_sick = False,
+                                    predicted_disease=image_disease.name if image_disease else "",
+                                    predicted_disease_human_input=image_disease.name if image_disease else "",
+                                    is_sick_human_input=False,
+                                    is_sick=False,
                                     file_url=image.file_url,
                                     ))
     return ImagesOut(data=images_data, count=len(images))

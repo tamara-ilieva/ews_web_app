@@ -16,9 +16,12 @@ import { Route as RecoverPasswordImport } from './routes/recover-password'
 import { Route as LoginImport } from './routes/login'
 import { Route as LayoutImport } from './routes/_layout'
 import { Route as LayoutIndexImport } from './routes/_layout/index'
+import { Route as LayoutUploadedimagesImport } from './routes/_layout/uploaded_images'
+import { Route as LayoutStaticimagesImport } from './routes/_layout/static_images'
 import { Route as LayoutSettingsImport } from './routes/_layout/settings'
 import { Route as LayoutItemsImport } from './routes/_layout/items'
 import { Route as LayoutImagesImport } from './routes/_layout/images'
+import { Route as LayoutDynamicimagesImport } from './routes/_layout/dynamic_images'
 import { Route as LayoutDiseasesImport } from './routes/_layout/diseases'
 import { Route as LayoutAdminImport } from './routes/_layout/admin'
 
@@ -49,6 +52,16 @@ const LayoutIndexRoute = LayoutIndexImport.update({
   getParentRoute: () => LayoutRoute,
 } as any)
 
+const LayoutUploadedimagesRoute = LayoutUploadedimagesImport.update({
+  path: '/uploaded_images',
+  getParentRoute: () => LayoutRoute,
+} as any)
+
+const LayoutStaticimagesRoute = LayoutStaticimagesImport.update({
+  path: '/static_images',
+  getParentRoute: () => LayoutRoute,
+} as any)
+
 const LayoutSettingsRoute = LayoutSettingsImport.update({
   path: '/settings',
   getParentRoute: () => LayoutRoute,
@@ -61,6 +74,11 @@ const LayoutItemsRoute = LayoutItemsImport.update({
 
 const LayoutImagesRoute = LayoutImagesImport.update({
   path: '/images',
+  getParentRoute: () => LayoutRoute,
+} as any)
+
+const LayoutDynamicimagesRoute = LayoutDynamicimagesImport.update({
+  path: '/dynamic_images',
   getParentRoute: () => LayoutRoute,
 } as any)
 
@@ -102,6 +120,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutDiseasesImport
       parentRoute: typeof LayoutImport
     }
+    '/_layout/dynamic_images': {
+      preLoaderRoute: typeof LayoutDynamicimagesImport
+      parentRoute: typeof LayoutImport
+    }
     '/_layout/images': {
       preLoaderRoute: typeof LayoutImagesImport
       parentRoute: typeof LayoutImport
@@ -112,6 +134,14 @@ declare module '@tanstack/react-router' {
     }
     '/_layout/settings': {
       preLoaderRoute: typeof LayoutSettingsImport
+      parentRoute: typeof LayoutImport
+    }
+    '/_layout/static_images': {
+      preLoaderRoute: typeof LayoutStaticimagesImport
+      parentRoute: typeof LayoutImport
+    }
+    '/_layout/uploaded_images': {
+      preLoaderRoute: typeof LayoutUploadedimagesImport
       parentRoute: typeof LayoutImport
     }
     '/_layout/': {
@@ -127,9 +157,12 @@ export const routeTree = rootRoute.addChildren([
   LayoutRoute.addChildren([
     LayoutAdminRoute,
     LayoutDiseasesRoute,
+    LayoutDynamicimagesRoute,
     LayoutImagesRoute,
     LayoutItemsRoute,
     LayoutSettingsRoute,
+    LayoutStaticimagesRoute,
+    LayoutUploadedimagesRoute,
     LayoutIndexRoute,
   ]),
   LoginRoute,

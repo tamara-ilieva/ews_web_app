@@ -8,9 +8,12 @@ import type { UserOut } from "../../client"
 
 const items = [
   { icon: FiHome, title: "Dashboard", path: "/" },
-  { icon: FiBriefcase, title: "Items", path: "/items" },
+  // { icon: FiBriefcase, title: "Items", path: "/items" },
   { icon: FiBriefcase, title: "Diseases", path: "/diseases" },
   { icon: FiBriefcase, title: "Images", path: "/images" },
+  { icon: FiBriefcase, title: "Static Images", path: "/static_images" },
+  { icon: FiBriefcase, title: "Dynamic Images", path: "/dynamic_images" },
+  { icon: FiBriefcase, title: "Uploaded Images", path: "/uploaded_images" },
   { icon: FiSettings, title: "User Settings", path: "/settings" },
 ]
 
