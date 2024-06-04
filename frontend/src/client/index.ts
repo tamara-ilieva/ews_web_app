@@ -45,7 +45,7 @@ export { $ValidationError } from './schemas/$ValidationError';
 
 export { ItemsService } from './services/ItemsService';
 export { DiseasesService } from './services/DiseasesService';
-export { ImagesService } from './services/ImagesService.txs';
+export { ImagesService } from './services/ImagesService';
 export { LoginService } from './services/LoginService';
 export { UsersService } from './services/UsersService';
 export { UtilsService } from './services/UtilsService';

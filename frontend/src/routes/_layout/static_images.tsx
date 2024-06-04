@@ -32,7 +32,7 @@ function Images() {
     isLoading,
     isError,
     error,
-  } = useQuery("images", () => ImagesService.getImages());
+  } = useQuery("images", () => ImagesService.getStaticImages());
 
   const images = imagesData ? imagesData.data : [];
 
@@ -77,7 +77,6 @@ function Images() {
                       <Td>{new Date(image.created_at).toLocaleDateString()}</Td>
                       <Td>
                       {<ActionsMenu type={"Image"} value={image} />}
-
                       </Td>
                     </Tr>
                   ))}

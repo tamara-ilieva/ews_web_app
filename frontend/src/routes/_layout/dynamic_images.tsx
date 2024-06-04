@@ -32,7 +32,7 @@ function Images() {
     isLoading,
     isError,
     error,
-  } = useQuery("images", () => ImagesService.getImages());
+  } = useQuery("images", () => ImagesService.getDynamicImages());
 
   const images = imagesData ? imagesData.data : [];
 

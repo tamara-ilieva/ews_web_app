@@ -32,7 +32,7 @@ function Images() {
     isLoading,
     isError,
     error,
-  } = useQuery("images", () => ImagesService.getImages());
+  } = useQuery("images", () => ImagesService.getUploadedImages());
 
   const images = imagesData ? imagesData.data : [];
 

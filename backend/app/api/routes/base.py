@@ -117,9 +117,7 @@ async def get_dashboard_images(session: SessionDep,
     for image in images:
         image_disease = session.execute(select(Diseases).where(Diseases.id == image.predicted_disease)).scalars().first()
         human_image_disease = session.execute(select(Diseases).where(Diseases.id == image.predicted_disease_human_input)).scalars().first()
-        print(image)
-        print(image_disease)
-        print(human_image_disease)
+
         images_data.append(ImageOut(id=image.id,
                                     created_at=image.created_at,
                                     updated_at=image.updated_at,
@@ -200,7 +198,7 @@ async def get_static_images(session: SessionDep,
 async def get_dynamic_images(session: SessionDep,
                          # db: Optional[AsyncSession] = Depends(get_db)
                          ):
-    stmt = select(DynamicImages)
+    stmt = select(DynamicImage)
     query = session.execute(stmt)
     images = query.scalars().all()
     images_data = []
@@ -209,8 +207,8 @@ async def get_dynamic_images(session: SessionDep,
         images_data.append(DynamicImageOut(id=image.id,
                                     created_at=image.created_at,
                                     updated_at=image.updated_at,
-                                    predicted_disease= image_disease.name if image_disease else 1,
-                                    predicted_disease_human_input= image_disease.name if image_disease else 1,
+                                    predicted_disease= image_disease.name if image_disease else "",
+                                    predicted_disease_human_input= image_disease.name if image_disease else "",
                                     is_sick_human_input=False,
                                     is_sick=False,
                                     file_url=image.file_url,
@@ -320,7 +318,6 @@ async def send_notification(email_receiver: str, image_data: bytes):
         server.login(email_sender, email_password)
         text = message.as_string()
         server.sendmail(email_sender, email_receiver, text)
-        print('Email sent successfully!')
     except Exception as e:
         print(f'Failed to send email. Error: {str(e)}')
     finally:
@@ -332,7 +329,6 @@ async def upload_image(session: SessionDep, image: UploadFile = File(...)):
     image_data = await image.read()
     base_64_str = base64.b64encode(image_data).decode('utf-8')
     image_url = await upload_image_to_imagekit(base_64_str)
-    print(image_url)
     new_image = Image(file_url=image_url, created_at=datetime.now(), updated_at=datetime.now())
 
     session.add(new_image)
@@ -340,11 +336,10 @@ async def upload_image(session: SessionDep, image: UploadFile = File(...)):
     session.refresh(new_image)
 
     @router.post("/upload-image-uploaded")
-    async def upload_image(session: SessionDep, image: UploadedImages = File(...)):
+    async def upload_image_uploaded(session: SessionDep, image: UploadedImages = File(...)):
         image_data = await image.read()
         base_64_str = base64.b64encode(image_data).decode('utf-8')
         image_url = await upload_image_to_imagekit(base_64_str)
-        print(image_url)
         new_image = UploadedImages(file_url=image_url, created_at=datetime.now(), updated_at=datetime.now())
 
         session.add(new_image)
@@ -352,11 +347,10 @@ async def upload_image(session: SessionDep, image: UploadFile = File(...)):
         session.refresh(new_image)
 
     @router.post("/upload-image-static")
-    async def upload_image(session: SessionDep, image: StaticImages = File(...)):
+    async def upload_image_static(session: SessionDep, image: StaticImages = File(...)):
         image_data = await image.read()
         base_64_str = base64.b64encode(image_data).decode('utf-8')
         image_url = await upload_image_to_imagekit(base_64_str)
-        print(image_url)
         new_image = StaticImages(file_url=image_url, created_at=datetime.now(), updated_at=datetime.now())
 
         session.add(new_image)

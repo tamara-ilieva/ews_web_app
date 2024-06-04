@@ -71,13 +71,6 @@ class Settings(BaseSettings):
             path=self.MYSQL_DB
         )
         print("=========")
-        print("=========")
-        print("=========")
-
-        print(res)
-        print(type(res))
-        print("=========")
-        print("=========")
 
         return res
     SMTP_TLS: bool = True

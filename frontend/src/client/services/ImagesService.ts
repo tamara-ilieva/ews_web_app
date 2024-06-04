@@ -19,7 +19,24 @@ export class ImagesService {
             url: '/api/v1/ews/images/',
         });
     }
-
+    public static getDynamicImages(): CancelablePromise<ImageOut[]> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/ews/dynamic-images/',
+        });
+    }
+    public static getStaticImages(): CancelablePromise<ImageOut[]> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/ews/static-images/',
+        });
+    }
+    public static getUploadedImages(): CancelablePromise<ImageOut[]> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/ews/uploaded-images/',
+        });
+    }
     /**
      * Upload Image
      * Upload a new image.
@@ -30,7 +47,7 @@ export class ImagesService {
     public static uploadStaticImage(formData: FormData): CancelablePromise<ImageOut> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/v1/ews/upload-image/',
+            url: '/api/v1/ews/upload-image-static/',
             body: formData,
             mediaType: 'multipart/form-data',
             errors: {
@@ -43,7 +60,7 @@ export class ImagesService {
     public static uploadOfflineImage(formData: FormData): CancelablePromise<ImageOut> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/v1/ews/upload-image/',
+            url: '/api/v1/ews/upload-image-uploaded/',
             body: formData,
             mediaType: 'multipart/form-data',
             errors: {
