@@ -74,7 +74,7 @@ export class ImagesService {
         const response = await axios.post(`${API_URL}/change-is-sick`, {
             type,
             image_id: imageId,
-            is_sick: isSick,
+            is_sick_human_input: isSick,
         });
         return response.data;
     };
