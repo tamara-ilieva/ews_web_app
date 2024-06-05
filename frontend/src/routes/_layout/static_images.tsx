@@ -22,10 +22,10 @@ import useCustomToast from "../../hooks/useCustomToast";
 import React from "react";
 
 export const Route = createFileRoute("/_layout/static_images")({
-  component: Images,
+  component: StaticImages,
 });
 
-function Images() {
+function StaticImages() {
   const showToast = useCustomToast();
   const {
     data: imagesData,
@@ -54,13 +54,14 @@ function Images() {
               Static Image Management
             </Heading>
             <p> These images are taken with the dron</p>
-            <Navbar type={"Image"} />
+            <Navbar type={"StaticImage"} />
             <TableContainer>
               <Table size={{ base: "sm", md: "md" }}>
                 <Thead>
                   <Tr>
                     <Th>ID</Th>
                     <Th>Predicted Disease</Th>
+                    <Th>Is sick</Th>
                     <Th>Image</Th>
                     <Th>Uploaded At</Th>
                     <Th>Actions</Th>
@@ -71,12 +72,13 @@ function Images() {
                     <Tr key={image.id}>
                       <Td>{image.id}</Td>
                       <Td>{image.predicted_disease}</Td>
+                      <Td>{image.is_sick ? 'Yes' : 'No'}</Td>
                       <Td>
                         <ChakraImage src={image.file_url} alt="Disease" boxSize="100px" objectFit="cover" />
                       </Td>
                       <Td>{new Date(image.created_at).toLocaleDateString()}</Td>
                       <Td>
-                      {<ActionsMenu type={"Image"} value={image} />}
+                        {<ActionsMenu type={"Image"} value={image} />}
                       </Td>
                     </Tr>
                   ))}
@@ -90,4 +92,4 @@ function Images() {
   );
 }
 
-export default Images;
+export default StaticImages;

@@ -23,7 +23,7 @@ interface AddImageProps {
     onClose: () => void;
 }
 
-const AddStaticImage: React.FC<AddImageProps> = ({ isOpen, onClose }) => {
+const AddOfflineImage: React.FC<AddImageProps> = ({ isOpen, onClose }) => {
     const queryClient = useQueryClient();
     const showToast = useCustomToast();
     const { register, handleSubmit, setValue, reset, formState: { isSubmitting } } = useForm<{ image: FileList }>({
@@ -87,4 +87,4 @@ const AddStaticImage: React.FC<AddImageProps> = ({ isOpen, onClose }) => {
     );
 };
 
-export default AddStaticImage;
+export default AddOfflineImage;

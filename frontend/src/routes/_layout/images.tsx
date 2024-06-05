@@ -53,7 +53,7 @@ function Images() {
             <Heading size="lg" textAlign={{ base: "center", md: "left" }} pt={12}>
               Image Management
             </Heading>
-            <Navbar type={"Image"} />
+            <Navbar type={"OfflineImage"} />
             <TableContainer>
               <Table size={{ base: "sm", md: "md" }}>
                 <Thead>

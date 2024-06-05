@@ -4,26 +4,23 @@ import os
 from contextlib import asynccontextmanager
 from datetime import datetime
 from email.mime.image import MIMEImage
-from io import BytesIO
 
 from app.api.deps import SessionDep
 from app.api.src.main import predict
+from app.core.disease_prediction import is_plant_sick
 from app.models.diseases import Diseases, CreateDisease, DiseasesOut
-from app.models.image import Image, ImageOut, ImagesOut
-from app.models.uploaded_images import UploadedImages, UploadedImageOut, UploadedImagesOut
-from app.models.static_images import StaticImages, StaticImageOut, StaticImagesOut
 from app.models.dynamic_images import DynamicImage, DynamicImageOut, DynamicImagesOut
+from app.models.image import Image, ImageOut, ImagesOut
+from app.models.static_images import StaticImages, StaticImageOut, StaticImagesOut
+from app.models.uploaded_images import UploadedImages, UploadedImageOut, UploadedImagesOut
 from fastapi import APIRouter
 from fastapi import File, UploadFile
 from fastapi.responses import RedirectResponse
 from imagekitio import ImageKit
 from imagekitio.models.UploadFileRequestOptions import UploadFileRequestOptions
+from pydantic import BaseModel
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
-
-from app.core.disease_prediction import detect_sick_plant_thermal_image
-
-from app.core.disease_prediction import is_plant_sick
 
 router = APIRouter()
 import smtplib
@@ -82,41 +79,75 @@ async def get_all_diseases(session: SessionDep,
     diseases = query.scalars().all()
     return DiseasesOut(data=diseases, count=len(diseases))
 
+
+class ChangeIsSickRequest(BaseModel):
+    type: str
+    image_id: int
+    is_sick_human_input: bool
+
+
 @router.post("/change-is-sick")
-async def change_is_sick(session: SessionDep, image_id: int, is_sick: bool):
-    stmt = select(Image).where(Image.id == image_id)
+async def change_is_sick(request: ChangeIsSickRequest, session: SessionDep):
+    stmt = None
+    print(request)
+    if request.type == "dynamic":
+        stmt = select(DynamicImage).where(DynamicImage.id == request.image_id)
+    elif request.type == "uploaded":
+        stmt = select(UploadedImages).where(UploadedImages.id == request.image_id)
+    elif request.type == "static":
+        stmt = select(StaticImages).where(StaticImages.id == request.image_id)
+
+    if stmt is None:
+        return {"message": "error"}
+
     query = session.execute(stmt)
     image = query.scalars().one()
+
     if image:
-        image.is_sick_human_input = is_sick
+        image.is_sick_human_input = request.is_sick_human_input
         session.commit()
-        return {"message": f"Updated image {image_id} successfully."}
+        return {"message": f"Updated image {request.image_id} successfully."}
     else:
         return {"error": "Image not found."}, 404
 
+
+class ChangeDiseaseRequest(BaseModel):
+    type: str
+    image_id: int
+    disease_id: int
+
+
 @router.post("/change-disease")
-async def change_disease(session: SessionDep, image_id: int, disease_id: int):
-    stmt = select(Image).where(Image.id == image_id)
+async def change_disease(request: ChangeDiseaseRequest, session: SessionDep):
+    if request.type == "dynamic":
+        stmt = select(DynamicImage).where(DynamicImage.id == request.image_id)
+    elif request.type == "uploaded":
+        stmt = select(UploadedImages).where(UploadedImages.id == request.image_id)
+    elif request.type == "static":
+        stmt = select(StaticImages).where(StaticImages.id == request.image_id)
     query = session.execute(stmt)
     image = query.scalars().one()
     if image:
-        image.predicted_disease_human_input = disease_id
+        image.predicted_disease_human_input = request.disease_id
         session.commit()
-        return {"message": f"Updated image {image_id} successfully."}
+        return {"message": f"Updated image {request.image_id} successfully."}
     else:
         return {"error": "Image not found."}, 404
+
 
 @router.get("/dashboard")
 async def get_dashboard_images(session: SessionDep,
-                         # db: Optional[AsyncSession] = Depends(get_db)
-                         ):
+                               # db: Optional[AsyncSession] = Depends(get_db)
+                               ):
     stmt = select(DynamicImage).order_by(DynamicImage.created_at.desc()).limit(4)
     query = session.execute(stmt)
     images = query.scalars().all()
     images_data = []
     for image in images:
-        image_disease = session.execute(select(Diseases).where(Diseases.id == image.predicted_disease)).scalars().first()
-        human_image_disease = session.execute(select(Diseases).where(Diseases.id == image.predicted_disease_human_input)).scalars().first()
+        image_disease = session.execute(
+            select(Diseases).where(Diseases.id == image.predicted_disease)).scalars().first()
+        human_image_disease = session.execute(
+            select(Diseases).where(Diseases.id == image.predicted_disease_human_input)).scalars().first()
 
         images_data.append(ImageOut(id=image.id,
                                     created_at=image.created_at,
@@ -132,8 +163,8 @@ async def get_dashboard_images(session: SessionDep,
 
 @router.get("/dashboard")
 async def get_dashboard_images(session: SessionDep,
-                         # db: Optional[AsyncSession] = Depends(get_db)
-                         ):
+                               # db: Optional[AsyncSession] = Depends(get_db)
+                               ):
     stmt = select(Image).order_by(Image.created_at.desc()).limit(4)
     query = session.execute(stmt)
     images = query.scalars().all()
@@ -144,9 +175,9 @@ async def get_dashboard_images(session: SessionDep,
                                     created_at=image.created_at,
                                     updated_at=image.updated_at,
                                     predicted_disease=image_disease.name if image_disease else "",
-                                    predicted_disease_human_input=image_disease.name if image_disease else 1,
-                                    is_sick_human_input=False,
-                                    is_sick=False,
+                                    predicted_disease_human_input=image_disease.name if image_disease else "",
+                                    is_sick_human_input=image.is_sick,
+                                    is_sick=image.is_sick,
                                     file_url=image.file_url,
                                     ))
     return ImagesOut(data=images_data, count=len(images))
@@ -161,79 +192,93 @@ async def get_all_images(session: SessionDep,
     images = query.scalars().all()
     images_data = []
     for image in images:
-        image_disease = session.execute(select(Diseases).where(Diseases.id == image.predicted_disease)).scalars().first()
+        image_disease = session.execute(
+            select(Diseases).where(Diseases.id == image.predicted_disease)).scalars().first()
+        human_image_disease = session.execute(
+            select(Diseases).where(Diseases.id == image.predicted_disease_human_input)).scalars().first()
         images_data.append(ImageOut(id=image.id,
                                     created_at=image.created_at,
                                     updated_at=image.updated_at,
                                     predicted_disease=image_disease.name if image_disease else "",
-                                    predicted_disease_human_input=image_disease.name if image_disease else "",
-                                    is_sick_human_input=False,
-                                    is_sick=False,
+                                    predicted_disease_human_input=human_image_disease.name if image_disease else "",
+                                    is_sick_human_input=image.is_sick,
+                                    is_sick=image.is_sick,
                                     file_url=image.file_url,
                                     ))
     return ImagesOut(data=images_data, count=len(images))
 
-@router.get("/static-images")
-async def get_static_images(session: SessionDep,
-                         # db: Optional[AsyncSession] = Depends(get_db)
-                         ):
+
+@router.get("/static-images", response_model=StaticImagesOut)
+async def get_static_images(session: SessionDep):
     stmt = select(StaticImages)
     query = session.execute(stmt)
     images = query.scalars().all()
     images_data = []
     for image in images:
-        image_disease = session.execute(select(Diseases).where(Diseases.id == image.predicted_disease)).scalars().first()
-        images_data.append(StaticImageOut(id=image.id,
-                                    created_at=image.created_at,
-                                    updated_at=image.updated_at,
-                                    predicted_disease=image_disease.name if image_disease else 1,
-                                    predicted_disease_human_input=image_disease.name if image_disease else 1,
-                                    is_sick_human_input=False,
-                                    is_sick=False,
-                                    file_url=image.file_url,
-                                    ))
-    return StaticImages(data=images_data, count=len(images))
+        image_disease = session.execute(
+            select(Diseases).where(Diseases.id == image.predicted_disease)).scalars().first()
+        human_image_disease = session.execute(
+            select(Diseases).where(Diseases.id == image.predicted_disease_human_input)).scalars().first()
+        images_data.append(StaticImageOut(
+            id=image.id,
+            created_at=image.created_at,
+            updated_at=image.updated_at,
+            predicted_disease=image_disease.name if image_disease else "",
+            predicted_disease_human_input=human_image_disease.name if human_image_disease else "",
+            is_sick_human_input=image.is_sick,
+            is_sick=image.is_sick,
+            file_url=image.file_url,
+        ))
+    return StaticImagesOut(data=images_data, count=len(images))
+
 
 @router.get("/dynamic-images")
 async def get_dynamic_images(session: SessionDep,
-                         # db: Optional[AsyncSession] = Depends(get_db)
-                         ):
+                             # db: Optional[AsyncSession] = Depends(get_db)
+                             ):
     stmt = select(DynamicImage)
     query = session.execute(stmt)
     images = query.scalars().all()
     images_data = []
     for image in images:
-        image_disease = session.execute(select(Diseases).where(Diseases.id == image.predicted_disease)).scalars().first()
+        image_disease = session.execute(
+            select(Diseases).where(Diseases.id == image.predicted_disease)).scalars().first()
+        human_image_disease = session.execute(
+            select(Diseases).where(Diseases.id == image.predicted_disease_human_input)).scalars().first()
         images_data.append(DynamicImageOut(id=image.id,
-                                    created_at=image.created_at,
-                                    updated_at=image.updated_at,
-                                    predicted_disease= image_disease.name if image_disease else "",
-                                    predicted_disease_human_input= image_disease.name if image_disease else "",
-                                    is_sick_human_input=False,
-                                    is_sick=False,
-                                    file_url=image.file_url,
-                                    ))
+                                           created_at=image.created_at,
+                                           updated_at=image.updated_at,
+                                           predicted_disease=image_disease.name if image_disease else "",
+                                           predicted_disease_human_input=human_image_disease.name if human_image_disease else "",
+                                           is_sick_human_input=image.is_sick_human_input,
+                                           is_sick=image.is_sick,
+                                           file_url=image.file_url,
+                                           ))
     return DynamicImagesOut(data=images_data, count=len(images))
+
 
 @router.get("/uploaded-images")
 async def get_uploaded_images(session: SessionDep,
-                         # db: Optional[AsyncSession] = Depends(get_db)
-                         ):
+                              # db: Optional[AsyncSession] = Depends(get_db)
+                              ):
     stmt = select(UploadedImages)
     query = session.execute(stmt)
     images = query.scalars().all()
     images_data = []
     for image in images:
-        image_disease = session.execute(select(Diseases).where(Diseases.id == image.predicted_disease)).scalars().first()
+        image_disease = session.execute(
+            select(Diseases).where(Diseases.id == image.predicted_disease)).scalars().first()
+        human_image_disease = session.execute(
+            select(Diseases).where(Diseases.id == image.predicted_disease_human_input)).scalars().first()
         images_data.append(UploadedImageOut(id=image.id,
-                                    created_at=image.created_at,
-                                    updated_at=image.updated_at,
-                                    predicted_disease=image_disease.name if image_disease else 1,
-                                    predicted_disease_human_input=image_disease.name if image_disease else 1,
-                                    is_sick_human_input=False,
-                                    is_sick=False,
-                                    file_url=image.file_url,
-                                    ))
+                                            created_at=image.created_at,
+                                            updated_at=image.updated_at,
+                                            predicted_disease=image_disease.name if image_disease else "",
+                                            predicted_disease_human_input=human_image_disease.name if human_image_disease else "",
+                                            is_sick_human_input=image.is_sick_human_input,
+                                            is_sick=image.is_sick,
+                                            file_url=image.file_url,
+                                            ))
     return UploadedImagesOut(data=images_data, count=len(images))
 
 
@@ -335,29 +380,33 @@ async def upload_image(session: SessionDep, image: UploadFile = File(...)):
     session.commit()
     session.refresh(new_image)
 
-    @router.post("/upload-image-uploaded")
-    async def upload_image_uploaded(session: SessionDep, image: UploadedImages = File(...)):
-        image_data = await image.read()
-        base_64_str = base64.b64encode(image_data).decode('utf-8')
-        image_url = await upload_image_to_imagekit(base_64_str)
-        new_image = UploadedImages(file_url=image_url, created_at=datetime.now(), updated_at=datetime.now())
 
-        session.add(new_image)
-        session.commit()
-        session.refresh(new_image)
+@router.post("/upload-image-uploaded/")
+async def upload_image_uploaded(session: SessionDep, image: UploadFile = File(...)):
+    print("====")
+    image_data = await image.read()
+    base_64_str = base64.b64encode(image_data).decode('utf-8')
+    image_url = await upload_image_to_imagekit(base_64_str)
+    new_image = UploadedImages(file_url=image_url, created_at=datetime.now(), updated_at=datetime.now())
 
-    @router.post("/upload-image-static")
-    async def upload_image_static(session: SessionDep, image: StaticImages = File(...)):
-        image_data = await image.read()
-        base_64_str = base64.b64encode(image_data).decode('utf-8')
-        image_url = await upload_image_to_imagekit(base_64_str)
-        new_image = StaticImages(file_url=image_url, created_at=datetime.now(), updated_at=datetime.now())
+    session.add(new_image)
+    session.commit()
+    session.refresh(new_image)
 
-        session.add(new_image)
-        session.commit()
-        session.refresh(new_image)
+
+@router.post("/upload-image-static/")
+async def upload_image_static(session: SessionDep, image: UploadFile = File(...)):
+    image_data = await image.read()
+    base_64_str = base64.b64encode(image_data).decode('utf-8')
+    image_url = await upload_image_to_imagekit(base_64_str)
+    new_image = StaticImages(file_url=image_url, created_at=datetime.now(), updated_at=datetime.now())
+
+    session.add(new_image)
+    session.commit()
+    session.refresh(new_image)
 
     return {"id": new_image.id, "file_url": new_image.file_url}
+
 
 @router.get("/detect-sick-plants")
 async def detect_sick_plants(session: SessionDep):
@@ -366,6 +415,7 @@ async def detect_sick_plants(session: SessionDep):
     for image in images:
         is_sick = is_plant_sick(image.file_url)
         print(image.file_url, is_sick)
+
 
 async def upload_image_to_imagekit(image_data: bytes) -> str:
     """

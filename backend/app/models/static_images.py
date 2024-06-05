@@ -15,7 +15,7 @@ class StaticImages(SQLModel, table=True):
     updated_at: datetime = Field(nullable=False)
 class StaticImageOut(SQLModel):
     id: int
-    predicted_disease: int
+    predicted_disease: str
     is_sick: bool
     predicted_disease_human_input: str
     is_sick_human_input: bool

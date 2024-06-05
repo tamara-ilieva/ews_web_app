@@ -22,10 +22,10 @@ import useCustomToast from "../../hooks/useCustomToast";
 import React from "react";
 
 export const Route = createFileRoute("/_layout/uploaded_images")({
-  component: Images,
+  component: UploadedImages,
 });
 
-function Images() {
+function UploadedImages() {
   const showToast = useCustomToast();
   const {
     data: imagesData,
@@ -54,13 +54,14 @@ function Images() {
               Uploaded Images Management
             </Heading>
             <p> These images are uploaded offline </p>
-            <Navbar type={"Image"} />
+            <Navbar type={"OfflineImage"} />
             <TableContainer>
               <Table size={{ base: "sm", md: "md" }}>
                 <Thead>
                   <Tr>
                     <Th>ID</Th>
                     <Th>Predicted Disease</Th>
+                    <Th>Is sick</Th>
                     <Th>Image</Th>
                     <Th>Uploaded At</Th>
                     <Th>Actions</Th>
@@ -71,6 +72,7 @@ function Images() {
                     <Tr key={image.id}>
                       <Td>{image.id}</Td>
                       <Td>{image.predicted_disease}</Td>
+                      <Td>{image.is_sick ? 'Yes' : 'No'}</Td>
                       <Td>
                         <ChakraImage src={image.file_url} alt="Disease" boxSize="100px" objectFit="cover" />
                       </Td>
@@ -91,4 +93,4 @@ function Images() {
   );
 }
 
-export default Images;
+export default UploadedImages;

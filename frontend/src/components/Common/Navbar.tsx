@@ -1,30 +1,53 @@
-import { Button, Flex, Icon, useDisclosure } from "@chakra-ui/react"
-import type React from "react"
-import { FaPlus } from "react-icons/fa"
+import { Button, Flex, Icon, useDisclosure } from "@chakra-ui/react";
+import React from "react";
+import { FaPlus } from "react-icons/fa";
 
 import AddUser from "../Admin/AddUser";
 import AddItem from "../Items/AddItem";
 import AddDisease from "../Diseases/AddDisease";
 import AddStaticImage from "../Images/AddStaticImage";
+import AddOfflineImage from "../Images/AddOfflineImage";
 
 interface NavbarProps {
-  type: string
+  type: string;
 }
 
 const Navbar: React.FC<NavbarProps> = ({ type }) => {
-  const addUserModal = useDisclosure()
-  const addItemModal = useDisclosure()
-  const addDiseaseModal = useDisclosure()
-  const addImageModal = useDisclosure()
+  const addUserModal = useDisclosure();
+  const addItemModal = useDisclosure();
+  const addDiseaseModal = useDisclosure();
+  const addStaticImageModal = useDisclosure();
+  const addOfflineImageModal = useDisclosure();
 
-  let onOpen = addUserModal.onOpen; // default to addUserModal.onOpen
+  let onOpen;
+  let isOpen;
+  let onClose;
 
-  if (type === "Item") {
-    onOpen = addItemModal.onOpen;
-  } else if (type === "Disease") {
-    onOpen = addDiseaseModal.onOpen;
-  } else if (type === "Image"){
-    onOpen = addImageModal.onOpen
+  switch (type) {
+    case "Item":
+      onOpen = addItemModal.onOpen;
+      isOpen = addItemModal.isOpen;
+      onClose = addItemModal.onClose;
+      break;
+    case "Disease":
+      onOpen = addDiseaseModal.onOpen;
+      isOpen = addDiseaseModal.isOpen;
+      onClose = addDiseaseModal.onClose;
+      break;
+    case "StaticImage":
+      onOpen = addStaticImageModal.onOpen;
+      isOpen = addStaticImageModal.isOpen;
+      onClose = addStaticImageModal.onClose;
+      break;
+    case "OfflineImage":
+      onOpen = addOfflineImageModal.onOpen;
+      isOpen = addOfflineImageModal.isOpen;
+      onClose = addOfflineImageModal.onClose;
+      break;
+    default:
+      onOpen = addUserModal.onOpen;
+      isOpen = addUserModal.isOpen;
+      onClose = addUserModal.onClose;
   }
 
   return (
@@ -38,13 +61,14 @@ const Navbar: React.FC<NavbarProps> = ({ type }) => {
         >
           <Icon as={FaPlus} /> Add {type}
         </Button>
-        {type === "User" && <AddUser isOpen={addUserModal.isOpen} onClose={addUserModal.onClose} />}
-        {type === "Item" && <AddItem isOpen={addItemModal.isOpen} onClose={addItemModal.onClose} />}
-        {type === "Disease" && <AddDisease isOpen={addDiseaseModal.isOpen} onClose={addDiseaseModal.onClose} />}
-        {type === "Image" && <AddStaticImage isOpen={addImageModal.isOpen} onClose={addImageModal.onClose} />}
+        {type === "User" && <AddUser isOpen={isOpen} onClose={onClose} />}
+        {type === "Item" && <AddItem isOpen={isOpen} onClose={onClose} />}
+        {type === "Disease" && <AddDisease isOpen={isOpen} onClose={onClose} />}
+        {type === "OfflineImage" && <AddOfflineImage isOpen={isOpen} onClose={onClose} />}
+        {type === "StaticImage" && <AddStaticImage isOpen={isOpen} onClose={onClose} />}
       </Flex>
     </>
-  )
-}
+  );
+};
 
-export default Navbar
+export default Navbar;
