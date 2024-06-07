@@ -34,6 +34,8 @@ aiomysql = "^0.2.0"
 mysqlclient = "^2.2.4"
 imagekitio = "^4.0.1"
 opencv-python = "^4.9.0.80"
+torch = "^2.3.0"
+torchvision = "^0.18.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.3"

@@ -44,5 +44,7 @@ def get_disease_prediction(image_url):
 
 def is_plant_sick(image_url):
     is_sick = detect_sick_plant_thermal_image(image_url)
+    disease = None
     if is_sick:
-        get_disease_prediction(image_url)
+        disease = get_disease_prediction(image_url)
+    return is_sick, disease

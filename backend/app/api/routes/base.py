@@ -13,6 +13,7 @@ from app.models.dynamic_images import DynamicImage, DynamicImageOut, DynamicImag
 from app.models.image import Image, ImageOut, ImagesOut
 from app.models.static_images import StaticImages, StaticImageOut, StaticImagesOut
 from app.models.uploaded_images import UploadedImages, UploadedImageOut, UploadedImagesOut
+from app.api.src.main import predict
 from fastapi import APIRouter
 from fastapi import File, UploadFile
 from fastapi.responses import RedirectResponse
@@ -26,7 +27,6 @@ router = APIRouter()
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-
 URL = os.getenv("DB_URL", "mysql+aiomysql://root:admin@localhost:3306/ews")
 engine = create_engine(URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -153,9 +153,9 @@ async def get_dashboard_images(session: SessionDep,
                                     created_at=image.created_at,
                                     updated_at=image.updated_at,
                                     predicted_disease=image_disease.name if image_disease else "",
-                                    is_sick=image.is_sick,
+                                    is_sick=image.is_sick if image.is_sick is not None else False,
                                     predicted_disease_human_input=human_image_disease.name if human_image_disease else "",
-                                    is_sick_human_input=image.is_sick_human_input,
+                                    is_sick_human_input=image.is_sick_human_input if image.is_sick_human_input is not None else False,
                                     file_url=image.file_url,
                                     ))
     return ImagesOut(data=images_data, count=len(images))
@@ -176,8 +176,8 @@ async def get_dashboard_images(session: SessionDep,
                                     updated_at=image.updated_at,
                                     predicted_disease=image_disease.name if image_disease else "",
                                     predicted_disease_human_input=image_disease.name if image_disease else "",
-                                    is_sick_human_input=image.is_sick,
-                                    is_sick=image.is_sick,
+                                    is_sick_human_input=image.is_sick_human_input if image.is_sick_human_input is not None else False,
+                                    is_sick=image.is_sick if image.is_sick is not None else False,
                                     file_url=image.file_url,
                                     ))
     return ImagesOut(data=images_data, count=len(images))
@@ -201,8 +201,8 @@ async def get_all_images(session: SessionDep,
                                     updated_at=image.updated_at,
                                     predicted_disease=image_disease.name if image_disease else "",
                                     predicted_disease_human_input=human_image_disease.name if image_disease else "",
-                                    is_sick_human_input=image.is_sick,
-                                    is_sick=image.is_sick,
+                                    is_sick_human_input=image.is_sick_human_input if image.is_sick_human_input is not None else False,
+                                    is_sick=image.is_sick if image.is_sick is not None else False,
                                     file_url=image.file_url,
                                     ))
     return ImagesOut(data=images_data, count=len(images))
@@ -225,8 +225,8 @@ async def get_static_images(session: SessionDep):
             updated_at=image.updated_at,
             predicted_disease=image_disease.name if image_disease else "",
             predicted_disease_human_input=human_image_disease.name if human_image_disease else "",
-            is_sick_human_input=image.is_sick,
-            is_sick=image.is_sick,
+            is_sick_human_input=image.is_sick_human_input if image.is_sick_human_input is not None else False,
+            is_sick=image.is_sick if image.is_sick is not None else False,
             file_url=image.file_url,
         ))
     return StaticImagesOut(data=images_data, count=len(images))
@@ -250,8 +250,8 @@ async def get_dynamic_images(session: SessionDep,
                                            updated_at=image.updated_at,
                                            predicted_disease=image_disease.name if image_disease else "",
                                            predicted_disease_human_input=human_image_disease.name if human_image_disease else "",
-                                           is_sick_human_input=image.is_sick_human_input,
-                                           is_sick=image.is_sick,
+                                           is_sick_human_input=image.is_sick_human_input if image.is_sick_human_input is not None else False,
+                                           is_sick=image.is_sick if image.is_sick is not None else False,
                                            file_url=image.file_url,
                                            ))
     return DynamicImagesOut(data=images_data, count=len(images))
@@ -275,8 +275,8 @@ async def get_uploaded_images(session: SessionDep,
                                             updated_at=image.updated_at,
                                             predicted_disease=image_disease.name if image_disease else "",
                                             predicted_disease_human_input=human_image_disease.name if human_image_disease else "",
-                                            is_sick_human_input=image.is_sick_human_input,
-                                            is_sick=image.is_sick,
+                                            is_sick_human_input=image.is_sick_human_input if image.is_sick_human_input is not None else False,
+                                            is_sick=image.is_sick if image.is_sick is not None else False,
                                             file_url=image.file_url,
                                             ))
     return UploadedImagesOut(data=images_data, count=len(images))
@@ -374,7 +374,7 @@ async def upload_image(session: SessionDep, image: UploadFile = File(...)):
     image_data = await image.read()
     base_64_str = base64.b64encode(image_data).decode('utf-8')
     image_url = await upload_image_to_imagekit(base_64_str)
-    new_image = Image(file_url=image_url, created_at=datetime.now(), updated_at=datetime.now())
+    new_image = DynamicImage(file_url=image_url, created_at=datetime.now(), updated_at=datetime.now())
 
     session.add(new_image)
     session.commit()
@@ -460,3 +460,7 @@ async def upload_image_to_imagekit(image_data: bytes) -> str:
         return result.response_metadata.raw["url"]
     else:
         return "Upload failed, no URL returned"
+
+@router.post('/predict-disease')
+async def predict_disease_from_image(session: SessionDep):
+    return predict("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTAsyN9JjHJmhptDHCWAkqt0FAKbD72UqxmaQ&s")
