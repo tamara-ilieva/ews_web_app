@@ -9,6 +9,6 @@ class Temperature(SQLModel, table=True):
     average: float
     current: float
     max: float
-    image_id: int = Field(foreign_key="images.id")
+    image_id: int = Field(foreign_key="dynamic_images.id")
     created_at: datetime = Field(nullable=False)
     updated_at: datetime = Field(nullable=False)
