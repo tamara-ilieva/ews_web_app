@@ -25,7 +25,7 @@ def detect_sick_plant_thermal_image(image_url):
     output_image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
     cv2.drawContours(output_image, contours, -1, (0, 255, 0), 2)
 
-    cv2.imshow('Output Image', output_image)
+    # cv2.imshow('Output Image', output_image)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
@@ -59,9 +59,50 @@ def extract_temperatures(image_url):
         # Convert image to grayscale
         gray_image = image.convert("L")
 
+        # Convert to OpenCV format
+        open_cv_image = np.array(gray_image)
 
-def is_plant_sick(image_url):
-    is_sick = detect_sick_plant_thermal_image(image_url)
+        # Apply thresholding
+        _, thresh_image = cv2.threshold(open_cv_image, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+
+        # Apply dilation and erosion to remove noise
+        kernel = np.ones((1, 1), np.uint8)
+        processed_image = cv2.dilate(thresh_image, kernel, iterations=1)
+        processed_image = cv2.erode(processed_image, kernel, iterations=1)
+
+        # Convert back to PIL format
+        processed_image_pil = Image.fromarray(processed_image)
+
+        # Use Tesseract to extract text
+        text = pytesseract.image_to_string(processed_image_pil, config='--psm 6')
+        print(text)
+
+        temperatures = []
+        for word in text.split():
+            try:
+                temperatures.append(float(word))
+            except ValueError:
+                continue
+
+        print(image_url)
+        print(temperatures)
+        return temperatures
+    else:
+        raise Exception(f"Failed to download image from {image_url}")
+
+def is_plant_sick(thermal_image_url, optical_image_url, prev_temperatures, threshold=5.0):
+    """
+    Determine if the plant in the image is sick and predict the disease.
+
+    :param thermal_image_url: URL of the thermal image.
+    :param optical_image_url: URL of the optical image.
+    :param prev_temperatures: List of temperatures from the previous thermal image.
+    :param threshold: Temperature difference threshold to determine sickness.
+    :return: Tuple containing is_sick (boolean) and disease (str or None).
+    """
+    # Extract temperatures from the current thermal image
+    current_temperatures = extract_temperatures(thermal_image_url)
+    is_sick = False
     disease = None
 
     if prev_temperatures and current_temperatures:
