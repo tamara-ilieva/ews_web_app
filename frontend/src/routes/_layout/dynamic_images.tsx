@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { createFileRoute } from "@tanstack/react-router";
-import { Container, Flex, Heading, Spinner, Table, TableContainer, Tbody, Td, Th, Thead, Tr, Image as ChakraImage, Button, Select } from "@chakra-ui/react";
+import { Container, Flex, Heading, Spinner, Table, TableContainer, Tbody, Td, Th, Thead, Tr, Image as ChakraImage, Button, HStack } from "@chakra-ui/react";
 import { useQuery, useMutation, useQueryClient } from "react-query";
 import useCustomToast from "../../hooks/useCustomToast";
 import ImagesService from '../../client/services/ImagesService';
@@ -14,18 +14,20 @@ export const Route = createFileRoute("/_layout/dynamic_images")({
 function DynamicImages() {
   const showToast = useCustomToast();
   const queryClient = useQueryClient();
+  const [page, setPage] = useState(1);
+  const pageSize = 10; // You can also allow this to be dynamic
 
-  const { data: imagesData, isLoading, isError, error } = useQuery("images", ImagesService.getDynamicImages);
+  const { data: imagesData, isLoading, isError, error } = useQuery(["images", page, pageSize], () => ImagesService.getDynamicImages(page, pageSize));
 
   const changeIsSickMutation = useMutation(
     ({ type, image_id, is_sick_human_input }) => ImagesService.changeIsSick(type, image_id, is_sick_human_input),
     {
       onMutate: async ({ image_id, is_sick_human_input }) => {
-        await queryClient.cancelQueries("images");
+        await queryClient.cancelQueries(["images", page, pageSize]);
 
-        const previousImages = queryClient.getQueryData("images");
+        const previousImages = queryClient.getQueryData(["images", page, pageSize]);
 
-        queryClient.setQueryData("images", (old) => {
+        queryClient.setQueryData(["images", page, pageSize], (old) => {
           return {
             ...old,
             data: old.data.map((image) =>
@@ -38,10 +40,10 @@ function DynamicImages() {
       },
       onError: (err, variables, context) => {
         showToast("Error", "Failed to update image.", "error");
-        queryClient.setQueryData("images", context.previousImages);
+        queryClient.setQueryData(["images", page, pageSize], context.previousImages);
       },
       onSettled: () => {
-        queryClient.invalidateQueries("images");
+        queryClient.invalidateQueries(["images", page, pageSize]);
       },
       onSuccess: () => {
         showToast("Success!", "Image updated successfully.", "success");
@@ -53,11 +55,11 @@ function DynamicImages() {
     ({ type, image_id, disease_id }) => ImagesService.changeDisease(type, image_id, disease_id),
     {
       onMutate: async ({ image_id, disease_id }) => {
-        await queryClient.cancelQueries("images");
+        await queryClient.cancelQueries(["images", page, pageSize]);
 
-        const previousImages = queryClient.getQueryData("images");
+        const previousImages = queryClient.getQueryData(["images", page, pageSize]);
 
-        queryClient.setQueryData("images", (old) => {
+        queryClient.setQueryData(["images", page, pageSize], (old) => {
           return {
             ...old,
             data: old.data.map((image) =>
@@ -70,10 +72,10 @@ function DynamicImages() {
       },
       onError: (err, variables, context) => {
         showToast("Error", "Failed to update image.", "error");
-        queryClient.setQueryData("images", context.previousImages);
+        queryClient.setQueryData(["images", page, pageSize], context.previousImages);
       },
       onSettled: () => {
-        queryClient.invalidateQueries("images");
+        queryClient.invalidateQueries(["images", page, pageSize]);
       },
       onSuccess: () => {
         showToast("Success!", "Image updated successfully.", "success");
@@ -88,14 +90,40 @@ function DynamicImages() {
   };
 
   const handleDiseaseChange = (type, image_id, event) => {
-    const disease_id = parseInt(event.target.value, 10); // Ensure disease_id is an integer
+    const disease_id = parseInt(event.target.value, 10);
     changeDiseaseMutation.mutate({ type, image_id, disease_id });
+  };
+
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
   };
 
   if (isError) {
     const errDetail = (error).body?.detail;
     showToast("Something went wrong.", `${errDetail}`, "error");
   }
+
+  // Generate page numbers for pagination
+  const generatePageNumbers = (currentPage, totalPages) => {
+    const delta = 1;
+    const range = [];
+    for (let i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i++) {
+      range.push(i);
+    }
+    if (currentPage - delta > 2) {
+      range.unshift('...');
+    }
+    if (currentPage + delta < totalPages - 1) {
+      range.push('...');
+    }
+    range.unshift(1);
+    if (totalPages > 1) {
+      range.push(totalPages);
+    }
+    return range;
+  };
+
+  const pageNumbers = generatePageNumbers(page, imagesData?.total_pages || 0);
 
   return (
     <>
@@ -109,7 +137,7 @@ function DynamicImages() {
             <Heading size="lg" textAlign={{ base: "center", md: "left" }} pt={12}>
               Dynamic Image Management
             </Heading>
-            <p> These images are taken with the thermal Optris camera</p>
+            <p> These images are taken with the thermal Hikvision camera</p>
             <TableContainer>
               <Table size={{ base: "sm", md: "md" }}>
                 <Thead>
@@ -160,6 +188,39 @@ function DynamicImages() {
                 </Tbody>
               </Table>
             </TableContainer>
+            <Flex justifyContent="center" mt={4}>
+              <Button
+                onClick={() => handlePageChange(page - 1)}
+                disabled={page === 1}
+                mr={4}
+              >
+                Previous
+              </Button>
+              <HStack spacing={2}>
+                {pageNumbers.map((pageNumber, index) =>
+                  typeof pageNumber === 'string' ? (
+                    <Button key={index} disabled>
+                      {pageNumber}
+                    </Button>
+                  ) : (
+                    <Button
+                      key={pageNumber}
+                      onClick={() => handlePageChange(pageNumber)}
+                      colorScheme={page === pageNumber ? "blue" : "gray"}
+                    >
+                      {pageNumber}
+                    </Button>
+                  )
+                )}
+              </HStack>
+              <Button
+                onClick={() => handlePageChange(page + 1)}
+                disabled={page === imagesData.total_pages}
+                ml={4}
+              >
+                Next
+              </Button>
+            </Flex>
           </Container>
         )
       )}

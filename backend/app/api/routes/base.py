@@ -1,9 +1,14 @@
 # from app.db.session import get_db
 import base64
+import math
 import os
 from contextlib import asynccontextmanager
 from datetime import datetime
 from email.mime.image import MIMEImage
+from typing import Optional
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy.future import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import SessionDep
 from app.api.src.main import predict
@@ -22,11 +27,15 @@ from imagekitio.models.UploadFileRequestOptions import UploadFileRequestOptions
 from pydantic import BaseModel
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy import func
+
+from app.api.deps import get_db
 
 router = APIRouter()
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+
 URL = os.getenv("DB_URL", "mysql+aiomysql://root:admin@localhost:3306/ews")
 engine = create_engine(URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -233,29 +242,53 @@ async def get_static_images(session: SessionDep):
 
 
 @router.get("/dynamic-images")
-async def get_dynamic_images(session: SessionDep,
-                             # db: Optional[AsyncSession] = Depends(get_db)
-                             ):
-    stmt = select(DynamicImage)
-    query = session.execute(stmt)
-    images = query.scalars().all()
+async def get_dynamic_images(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1, le=100),
+    session: AsyncSession = Depends(get_db)
+):
+    offset = (page - 1) * page_size
+
+    stmt = select(DynamicImage).offset(offset).limit(page_size)
+    result = session.execute(stmt)
+    images = result.scalars().all()
+
+    total_stmt = select(func.count(DynamicImage.id))
+    total_result = session.execute(total_stmt)
+    total_images_count = total_result.scalar()
+
+    total_pages = math.ceil(total_images_count / page_size)
+
     images_data = []
     for image in images:
-        image_disease = session.execute(
-            select(Diseases).where(Diseases.id == image.predicted_disease)).scalars().first()
-        human_image_disease = session.execute(
-            select(Diseases).where(Diseases.id == image.predicted_disease_human_input)).scalars().first()
-        images_data.append(DynamicImageOut(id=image.id,
-                                           created_at=image.created_at,
-                                           updated_at=image.updated_at,
-                                           predicted_disease=image_disease.name if image_disease else "",
-                                           predicted_disease_human_input=human_image_disease.name if human_image_disease else "",
-                                           is_sick_human_input=image.is_sick_human_input if image.is_sick_human_input is not None else False,
-                                           is_sick=image.is_sick if image.is_sick is not None else False,
-                                           file_url=image.file_url,
-                                           ))
-    return DynamicImagesOut(data=images_data, count=len(images))
+        image_disease_result = session.execute(
+            select(Diseases).where(Diseases.id == image.predicted_disease)
+        )
+        image_disease = image_disease_result.scalars().first()
 
+        human_image_disease_result = session.execute(
+            select(Diseases).where(Diseases.id == image.predicted_disease_human_input)
+        )
+        human_image_disease = human_image_disease_result.scalars().first()
+
+        images_data.append(DynamicImageOut(
+            id=image.id,
+            created_at=image.created_at,
+            updated_at=image.updated_at,
+            predicted_disease=image_disease.name if image_disease else "",
+            predicted_disease_human_input=human_image_disease.name if human_image_disease else "",
+            is_sick_human_input=image.is_sick_human_input if image.is_sick_human_input is not None else False,
+            is_sick=image.is_sick if image.is_sick is not None else False,
+            file_url=image.file_url,
+        ))
+    return {
+        "data": images_data,
+        "count": len(images),
+        "total": total_images_count,
+        "total_pages": total_pages,
+        "page": page,
+        "page_size": page_size
+    }
 
 @router.get("/uploaded-images")
 async def get_uploaded_images(session: SessionDep,

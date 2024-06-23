@@ -2,7 +2,7 @@ import axios from 'axios';
 import { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
-import type { ImageOut } from '../models';
+import type { ImageOut, Disease } from '../models';
 
 const API_URL = 'http://localhost:8008/api/v1/ews';
 
@@ -14,10 +14,14 @@ export class ImagesService {
         });
     }
 
-    public static getDynamicImages(): CancelablePromise<ImageOut[]> {
+    public static getDynamicImages(page: number, page_size: number): CancelablePromise<{ data: ImageOut[], total: number, page: number, page_size: number }> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/v1/ews/dynamic-images/',
+            query: {
+                page: page,
+                page_size: page_size,
+            },
         });
     }
 
@@ -80,7 +84,6 @@ export class ImagesService {
     };
 
     public static changeDisease = async (type, imageId, diseaseId) => {
-        console.log(type, imageId, diseaseId)
         const response = await axios.post(`${API_URL}/change-disease`, {
             type: type,
             image_id: imageId,
@@ -90,4 +93,4 @@ export class ImagesService {
     };
 }
 
-export default ImagesService
+export default ImagesService;
