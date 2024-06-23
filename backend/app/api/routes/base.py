@@ -1,5 +1,6 @@
 # from app.db.session import get_db
 import base64
+import json
 import math
 import os
 from contextlib import asynccontextmanager
@@ -14,6 +15,7 @@ from app.api.deps import SessionDep
 from app.api.src.main import predict
 from app.core.disease_prediction import is_plant_sick
 from app.models.diseases import Diseases, CreateDisease, DiseasesOut
+from app.models.temperature import TemperatureData, Temperature
 from app.models.dynamic_images import DynamicImage, DynamicImageOut, DynamicImagesOut
 from app.models.image import Image, ImageOut, ImagesOut
 from app.models.static_images import StaticImages, StaticImageOut, StaticImagesOut
@@ -413,10 +415,25 @@ async def upload_image(session: SessionDep, image: UploadFile = File(...)):
     session.commit()
     session.refresh(new_image)
 
+    return {"image_id": new_image.id}
+
+
+@router.post("/temperatures")
+async def add_temperatures(session: SessionDep, temperatures_data: TemperatureData):
+    new_temperatures = Temperature(
+        average=temperatures_data.average_temperature,
+        min=temperatures_data.min_temperature,
+        max=temperatures_data.max_temperature,
+        image_id=temperatures_data.image_id,
+        created_at=datetime.now(),
+        updated_at=datetime.now()
+    )
+    session.add(new_temperatures)
+    session.commit()
+
 
 @router.post("/upload-image-uploaded/")
 async def upload_image_uploaded(session: SessionDep, image: UploadFile = File(...)):
-    print("====")
     image_data = await image.read()
     base_64_str = base64.b64encode(image_data).decode('utf-8')
     image_url = await upload_image_to_imagekit(base_64_str)
@@ -493,6 +510,7 @@ async def upload_image_to_imagekit(image_data: bytes) -> str:
         return result.response_metadata.raw["url"]
     else:
         return "Upload failed, no URL returned"
+
 
 @router.post('/predict-disease')
 async def predict_disease_from_image(session: SessionDep):
