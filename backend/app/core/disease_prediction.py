@@ -101,7 +101,7 @@ def is_plant_sick(thermal_image_url, optical_image_url, prev_temperatures, thres
     :return: Tuple containing is_sick (boolean) and disease (str or None).
     """
     # Extract temperatures from the current thermal image
-    current_temperatures = extract_temperatures(thermal_image_url)
+    #current_temperatures = extract_temperatures(thermal_image_url))
     is_sick = False
     disease = None
 
@@ -111,6 +111,12 @@ def is_plant_sick(thermal_image_url, optical_image_url, prev_temperatures, thres
 
         if is_sick:
             disease = get_disease_prediction(optical_image_url)
+    # if prev_temperatures and current_temperatures:
+    #     max_temp_diff = max(abs(a - b) for a, b in zip(prev_temperatures, current_temperatures))
+    #     is_sick = max_temp_diff > threshold
+    is_sick = detect_sick_plant_thermal_image(thermal_image_url)
+    if is_sick:
+         disease = get_disease_prediction(optical_image_url)
 
-    return is_sick, disease, current_temperatures
+    return is_sick, disease
 
