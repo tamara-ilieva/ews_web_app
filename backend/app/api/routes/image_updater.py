@@ -144,3 +144,19 @@ def update_all_images(session: Session = Depends(get_db)):
     update_dynamic_images(session)
     #update_uploaded_images(session)
     return {"message": "All images updated"}
+
+
+@router.get("/update_offline_now")
+def update_offline_images(session: Session = Depends(get_db)):
+    #update_static_images(session)
+    #update_dynamic_images(session)
+    update_uploaded_images(session)
+    return {"message": "All images updated"}
+
+
+@router.get("/update_static_now")
+def update_static_images(session: Session = Depends(get_db)):
+    update_static_images(session)
+    #update_dynamic_images(session)
+    #update_uploaded_images(session)
+    return {"message": "All images updated"}
