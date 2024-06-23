@@ -33,7 +33,7 @@ router = APIRouter()
 #         except ValueError:
 #             continue
 #     return temperatures
-def get_or_create_disease(session: Session, disease_name: str, remedy: str = None):
+def get_or_create_disease(session: Session, disease_name: str, remedy: str = '/'):
     disease = session.exec(select(Diseases).where(Diseases.name == disease_name)).first()
     if not disease:
         disease = Diseases(name=disease_name, description="", healing_steps=remedy)
