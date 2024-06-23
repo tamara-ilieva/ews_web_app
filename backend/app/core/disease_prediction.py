@@ -105,12 +105,6 @@ def is_plant_sick(thermal_image_url, optical_image_url, prev_temperatures, thres
     is_sick = False
     disease = None
 
-    if prev_temperatures and current_temperatures:
-        max_temp_diff = max(abs(a - b) for a, b in zip(prev_temperatures, current_temperatures))
-        is_sick = max_temp_diff > threshold
-
-        if is_sick:
-            disease = get_disease_prediction(optical_image_url)
     # if prev_temperatures and current_temperatures:
     #     max_temp_diff = max(abs(a - b) for a, b in zip(prev_temperatures, current_temperatures))
     #     is_sick = max_temp_diff > threshold
