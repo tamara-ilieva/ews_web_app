@@ -15,6 +15,7 @@ class DynamicImage(SQLModel, table=True):
     updated_at: datetime = Field(nullable=False)
 class DynamicImageOut(SQLModel):
     id: int
+    average_temperature: float
     predicted_disease: str
     is_sick: bool
     predicted_disease_human_input: str

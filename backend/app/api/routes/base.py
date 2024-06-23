@@ -272,9 +272,13 @@ async def get_dynamic_images(
             select(Diseases).where(Diseases.id == image.predicted_disease_human_input)
         )
         human_image_disease = human_image_disease_result.scalars().first()
+        temperature = session.execute(
+            select(Temperature).where(Temperature.image_id == image.id)
+        ).scalars().first()
 
         images_data.append(DynamicImageOut(
             id=image.id,
+            average_temperature=temperature.average if temperature else 30.4,
             created_at=image.created_at,
             updated_at=image.updated_at,
             predicted_disease=image_disease.name if image_disease else "",

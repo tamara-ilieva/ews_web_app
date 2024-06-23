@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { createFileRoute } from "@tanstack/react-router";
-import { Container, Flex, Heading, Spinner, Table, TableContainer, Tbody, Td, Th, Thead, Tr, Image as ChakraImage, Button, HStack } from "@chakra-ui/react";
+import { Container, Flex, Heading, Spinner, Table, TableContainer, Tbody, Td, Th, Thead, Tr, Image as ChakraImage, Button, HStack, Modal, ModalOverlay, ModalContent, ModalBody, ModalCloseButton, useDisclosure } from "@chakra-ui/react";
 import { useQuery, useMutation, useQueryClient } from "react-query";
 import useCustomToast from "../../hooks/useCustomToast";
 import ImagesService from '../../client/services/ImagesService';
 import ActionsMenu from "../../components/Common/ActionsMenu";
 import DiseaseDropdown from "../../components/Diseases/DiseasesDropdown";
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
 
 export const Route = createFileRoute("/_layout/dynamic_images")({
   component: DynamicImages,
@@ -15,6 +17,8 @@ function DynamicImages() {
   const showToast = useCustomToast();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const { isOpen, onOpen, onClose } = useDisclosure();
   const pageSize = 10; // You can also allow this to be dynamic
 
   const { data: imagesData, isLoading, isError, error } = useQuery(["images", page, pageSize], () => ImagesService.getDynamicImages(page, pageSize));
@@ -90,12 +94,17 @@ function DynamicImages() {
   };
 
   const handleDiseaseChange = (type, image_id, event) => {
-    const disease_id = parseInt(event.target.value, 10);
+    const disease_id = parseInt(event.target.value, 10); // Ensure disease_id is an integer
     changeDiseaseMutation.mutate({ type, image_id, disease_id });
   };
 
   const handlePageChange = (newPage) => {
     setPage(newPage);
+  };
+
+  const handleImageClick = (image) => {
+    setSelectedImage(image);
+    onOpen();
   };
 
   if (isError) {
@@ -105,7 +114,7 @@ function DynamicImages() {
 
   // Generate page numbers for pagination
   const generatePageNumbers = (currentPage, totalPages) => {
-    const delta = 1;
+    const delta = 1; // Adjust this value for how many pages to show on each side of the current page
     const range = [];
     for (let i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i++) {
       range.push(i);
@@ -143,29 +152,32 @@ function DynamicImages() {
                 <Thead>
                   <Tr>
                     <Th>ID</Th>
-                    <Th>Predicted Disease</Th>
-                    <Th>Predicted Disease Human Input</Th>
-                    <Th>Change Disease</Th>
+                    <Th>________ Image ________</Th>
+                    <Th>Avg Temperature</Th>
                     <Th>Is Sick</Th>
                     <Th>Is Sick Human Input</Th>
                     <Th>Change Status</Th>
-                    <Th>Image</Th>
+                    <Th>Predicted Disease</Th>
+                    <Th>Predicted Disease Human Input</Th>
+                    <Th>Change Disease</Th>
                     <Th>Uploaded At</Th>
-                    <Th>Actions</Th>
                   </Tr>
                 </Thead>
                 <Tbody>
                   {images.map((image) => (
                     <Tr key={image.id}>
                       <Td>{image.id}</Td>
-                      <Td>{image.predicted_disease}</Td>
-                      <Td>{image.predicted_disease_human_input}</Td>
                       <Td>
-                        <DiseaseDropdown
-                          selectedDisease={image.predicted_disease_human_input}
-                          onDiseaseChange={(disease_id) => handleDiseaseChange("dynamic", image.id, { target: { value: disease_id } })}
+                        <ChakraImage
+                          src={image.file_url}
+                          alt="Disease"
+                          boxSize="150px"
+                          objectFit="cover"
+                          cursor="pointer"
+                          onClick={() => handleImageClick(image)}
                         />
                       </Td>
+                      <Td>{image.average_temperature}</Td>
                       <Td>{image.is_sick ? 'Yes' : 'No'}</Td>
                       <Td>{image.is_sick_human_input ? 'Yes' : 'No'}</Td>
                       <Td>
@@ -176,13 +188,15 @@ function DynamicImages() {
                           {image.is_sick_human_input ? "Mark as Healthy" : "Mark as Sick"}
                         </Button>
                       </Td>
+                      <Td>{image.predicted_disease}</Td>
+                      <Td>{image.predicted_disease_human_input}</Td>
                       <Td>
-                        <ChakraImage src={image.file_url} alt="Disease" boxSize="100px" objectFit="cover" />
+                        <DiseaseDropdown
+                          selectedDisease={image.predicted_disease_human_input}
+                          onDiseaseChange={(disease_id) => handleDiseaseChange("dynamic", image.id, { target: { value: disease_id } })}
+                        />
                       </Td>
                       <Td>{new Date(image.created_at).toLocaleDateString()}</Td>
-                      <Td>
-                        <ActionsMenu type={"Image"} value={image} />
-                      </Td>
                     </Tr>
                   ))}
                 </Tbody>
@@ -221,6 +235,27 @@ function DynamicImages() {
                 Next
               </Button>
             </Flex>
+
+            {/* Image Modal */}
+            {selectedImage && (
+              <Modal isOpen={isOpen} onClose={onClose} size="full">
+                <ModalOverlay />
+                <ModalContent>
+                  <ModalCloseButton
+                     bg="blackAlpha.700"
+                    color="white"
+                    _hover={{ bg: "blackAlpha.900" }}
+                    _focus={{ boxShadow: "none" }}
+                    zIndex="tooltip"
+                    />
+                  <ModalBody>
+                    <Zoom>
+                      <img src={selectedImage.file_url} alt="Disease" style={{ width: '100%' }} />
+                    </Zoom>
+                  </ModalBody>
+                </ModalContent>
+              </Modal>
+            )}
           </Container>
         )
       )}
