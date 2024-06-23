@@ -72,29 +72,30 @@ def update_dynamic_images(session: Session):
             thermal_image = images[i]
             optical_image = images[i + 1]
 
-            is_sick, disease, current_temperatures = is_plant_sick(thermal_image.file_url, optical_image.file_url,
+            is_sick, disease = is_plant_sick(thermal_image.file_url, optical_image.file_url,
                                                 prev_temperatures)
-            if not current_temperatures or current_temperatures[0] <= 15.0 or current_temperatures[0] >= 40:
-                current_temperatures=[20.2+random.choice([0.5, 0.2, 0.1, 0.6, 0.7, 0.8])]
-            print(is_sick, disease)
-            print(current_temperatures)
-            temperature1 = Temperature(average=current_temperatures[0]+5.6,
-                                      current=current_temperatures[0],
-                                      max=current_temperatures[0]+10.6,
-                                      image_id=images[i].id,
-                                      created_at=datetime.datetime.now(), updated_at=datetime.datetime.now())
+            # if not current_temperatures or current_temperatures[0] <= 15.0 or current_temperatures[0] >= 40:
+            #     current_temperatures=[20.2+random.choice([0.5, 0.2, 0.1, 0.6, 0.7, 0.8])]
+            # print(is_sick, disease)
+            # print(current_temperatures)
+            # temperature1 = Temperature(average=current_temperatures[0]+5.6,
+            #                           current=current_temperatures[0],
+            #                           max=current_temperatures[0]+10.6,
+            #                           image_id=images[i].id,
+            #                           created_at=datetime.datetime.now(), updated_at=datetime.datetime.now())
+            #
+            # temperature2 = Temperature(average=current_temperatures[0] + 5.6,
+            #                           current=current_temperatures[0],
+            #                           max=current_temperatures[0] + 10.6,
+            #                           image_id=images[i+1].id,
+            #                           created_at=datetime.datetime.now(), updated_at=datetime.datetime.now())
 
-            temperature2 = Temperature(average=current_temperatures[0] + 5.6,
-                                      current=current_temperatures[0],
-                                      max=current_temperatures[0] + 10.6,
-                                      image_id=images[i+1].id,
-                                      created_at=datetime.datetime.now(), updated_at=datetime.datetime.now())
-
-            session.add(temperature1)
-            session.add(temperature2)
-            session.commit()
-            continue
+            # session.add(temperature1)
+            # session.add(temperature2)
+            # session.commit()
+            # continue
             if disease:
+                disease=disease[0]
                 disease_id = get_or_create_disease(session, disease)
                 thermal_image.predicted_disease = disease_id
                 optical_image.predicted_disease = disease_id
@@ -105,8 +106,6 @@ def update_dynamic_images(session: Session):
             # session.add(thermal_image)
             # session.add(optical_image)
 
-            # Update previous temperatures
-            prev_temperatures = current_temperatures
 
     session.commit()
 
