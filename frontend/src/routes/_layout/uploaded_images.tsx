@@ -10,6 +10,7 @@ import {
   Th,
   Thead,
   Tr,
+  Button,
   Image as ChakraImage,
 } from "@chakra-ui/react";
 import { createFileRoute } from "@tanstack/react-router";
@@ -20,6 +21,7 @@ import ActionsMenu from "../../components/Common/ActionsMenu";
 import Navbar from "../../components/Common/Navbar";
 import useCustomToast from "../../hooks/useCustomToast";
 import React from "react";
+import DiseaseDropdown from "../../components/Diseases/DiseasesDropdown";
 
 export const Route = createFileRoute("/_layout/uploaded_images")({
   component: UploadedImages,

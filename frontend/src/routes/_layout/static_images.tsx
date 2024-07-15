@@ -9,9 +9,11 @@ import {
   Td,
   Th,
   Thead,
+  Button,
   Tr,
   Image as ChakraImage,
 } from "@chakra-ui/react";
+import DiseaseDropdown from "../../components/Diseases/DiseasesDropdown";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "react-query";
 
@@ -53,7 +55,7 @@ function StaticImages() {
             <Heading size="lg" textAlign={{ base: "center", md: "left" }} pt={12}>
               Static Image Management
             </Heading>
-            <p> These images are taken with the dron</p>
+            <p> These images are taken with the drone </p>
             <Navbar type={"StaticImage"} />
             <TableContainer>
                  <Table size={{ base: "sm", md: "md" }}>

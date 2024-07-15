@@ -233,6 +233,7 @@ async def get_static_images(session: SessionDep):
             is_sick_human_input=image.is_sick_human_input if image.is_sick_human_input is not None else False,
             is_sick=image.is_sick if image.is_sick is not None else False,
             file_url=image.file_url,
+            labeled=image.labeled,
         ))
     return StaticImagesOut(data=images_data, count=len(images))
 
@@ -280,6 +281,7 @@ async def get_dynamic_images(
             is_sick_human_input=image.is_sick_human_input if image.is_sick_human_input is not None else False,
             is_sick=image.is_sick if image.is_sick is not None else False,
             file_url=image.file_url,
+            labeled=image.labeled,
         ))
     return {
         "data": images_data,
@@ -312,6 +314,7 @@ async def get_uploaded_images(session: SessionDep,
                                             is_sick_human_input=image.is_sick_human_input if image.is_sick_human_input is not None else False,
                                             is_sick=image.is_sick if image.is_sick is not None else False,
                                             file_url=image.file_url,
+                                            labeled=image.labeled
                                             ))
     return UploadedImagesOut(data=images_data, count=len(images))
 
