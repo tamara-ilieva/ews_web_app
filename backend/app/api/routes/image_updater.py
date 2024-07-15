@@ -92,9 +92,6 @@ def update_dynamic_images(session: Session):
             thermal_image.labeled = True
             optical_image.labeled = True
 
-            # session.add(thermal_image)
-            # session.add(optical_image)
-
             session.add(thermal_image)
             session.add(optical_image)
 
