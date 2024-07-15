@@ -1,37 +1,32 @@
 # from app.db.session import get_db
 import base64
-import json
 import math
 import os
 from contextlib import asynccontextmanager
 from datetime import datetime
 from email.mime.image import MIMEImage
-from typing import Optional
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy.future import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import SessionDep
+from app.api.deps import get_db
 from app.api.src.main import predict
 from app.core.disease_prediction import is_plant_sick
 from app.models.diseases import Diseases, CreateDisease, DiseasesOut
-from app.models.temperature import TemperatureData, Temperature
-from app.models.dynamic_images import DynamicImage, DynamicImageOut, DynamicImagesOut
+from app.models.dynamic_images import DynamicImage, DynamicImageOut
 from app.models.image import Image, ImageOut, ImagesOut
 from app.models.static_images import StaticImages, StaticImageOut, StaticImagesOut
+from app.models.temperature import TemperatureData, Temperature
 from app.models.uploaded_images import UploadedImages, UploadedImageOut, UploadedImagesOut
-from app.api.src.main import predict
 from fastapi import APIRouter
+from fastapi import Depends, Query
 from fastapi import File, UploadFile
 from fastapi.responses import RedirectResponse
 from imagekitio import ImageKit
 from imagekitio.models.UploadFileRequestOptions import UploadFileRequestOptions
 from pydantic import BaseModel
 from sqlalchemy import create_engine, select
-from sqlalchemy.orm import sessionmaker
 from sqlalchemy import func
-
-from app.api.deps import get_db
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import sessionmaker
 
 router = APIRouter()
 import smtplib
@@ -100,7 +95,6 @@ class ChangeIsSickRequest(BaseModel):
 @router.post("/change-is-sick")
 async def change_is_sick(request: ChangeIsSickRequest, session: SessionDep):
     stmt = None
-    print(request)
     if request.type == "dynamic":
         stmt = select(DynamicImage).where(DynamicImage.id == request.image_id)
     elif request.type == "uploaded":
@@ -245,9 +239,9 @@ async def get_static_images(session: SessionDep):
 
 @router.get("/dynamic-images")
 async def get_dynamic_images(
-    page: int = Query(1, ge=1),
-    page_size: int = Query(10, ge=1, le=100),
-    session: AsyncSession = Depends(get_db)
+        page: int = Query(1, ge=1),
+        page_size: int = Query(10, ge=1, le=100),
+        session: AsyncSession = Depends(get_db)
 ):
     offset = (page - 1) * page_size
 
@@ -295,6 +289,7 @@ async def get_dynamic_images(
         "page": page,
         "page_size": page_size
     }
+
 
 @router.get("/uploaded-images")
 async def get_uploaded_images(session: SessionDep,
@@ -468,7 +463,6 @@ async def detect_sick_plants(session: SessionDep):
     images = session.execute(stmt).scalars().all()
     for image in images:
         is_sick = is_plant_sick(image.file_url)
-        print(image.file_url, is_sick)
 
 
 async def upload_image_to_imagekit(image_data: bytes) -> str:

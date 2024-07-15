@@ -9,7 +9,6 @@ def predict(image_url: str):
     try:
         # Download the image
         response = requests.get(image_url)
-        print(type(response))
         response.raise_for_status()  # Ensure the request was successful
 
         imgdata = response.content

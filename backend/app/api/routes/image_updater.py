@@ -1,41 +1,20 @@
-import datetime
-import random
 from typing import Optional
 
-from fastapi import APIRouter, Depends
-from sqlmodel import Session, select
-from apscheduler.schedulers.background import BackgroundScheduler
+from app.api.deps import get_db
 from app.api.src.main import predict
+from app.core.disease_prediction import detect_sick_plant_thermal_image
 from app.core.disease_prediction import is_plant_sick
-from app.api.deps import get_db, SessionDep
-from app.models.static_images import StaticImages
-from app.models.uploaded_images import UploadedImages
-from app.models.dynamic_images import DynamicImage
-
 from app.models.diseases import Diseases
-
+from app.models.dynamic_images import DynamicImage
+from app.models.static_images import StaticImages
 from app.models.temperature import Temperature
+from app.models.uploaded_images import UploadedImages
+from fastapi import APIRouter, Depends, BackgroundTasks
+from sqlmodel import Session, select
 
 router = APIRouter()
 
 
-#
-# def extract_temperatures(image_url):
-#     """
-#     Extracts temperature readings from a thermal image.
-#
-#     :param image_url: URL of the thermal image.
-#     :return: List of temperatures extracted from the image.
-#     """
-#     image = Image.open(image_url)
-#     text = pytesseract.image_to_string(image)
-#     temperatures = []
-#     for word in text.split():
-#         try:
-#             temperatures.append(float(word))
-#         except ValueError:
-#             continue
-#     return temperatures
 def get_or_create_disease(session: Session, disease_name: str, remedy: str = '/'):
     disease = session.exec(select(Diseases).where(Diseases.name == disease_name)).first()
     if not disease:
@@ -47,17 +26,18 @@ def get_or_create_disease(session: Session, disease_name: str, remedy: str = '/'
 
 
 def update_static_images(session: Session):
-    statement = select(StaticImages).where(StaticImages.predicted_disease == None)
+    statement = select(StaticImages).where(StaticImages.labeled is False)
     images = session.exec(statement).all()
 
     for image in images:
-        print(image)
-        result, remedy = predict(image.file_url)
-        if result:
-            disease_id = get_or_create_disease(session, result)
-            image.predicted_disease = disease_id
-            session.add(image)
-
+        is_sick_thermal = detect_sick_plant_thermal_image(image.file_url)
+        if is_sick_thermal:
+            result, remedy = predict(image.file_url)
+            if result:
+                disease_id = get_or_create_disease(session, result)
+                image.predicted_disease = disease_id
+        image.labeled = True
+        session.add(image)
     session.commit()
 
 
@@ -68,10 +48,9 @@ def get_temperatures(session: Session, image_id: int) -> Optional[Temperature]:
 
 
 def update_dynamic_images(session: Session):
-    statement = select(DynamicImage).where(DynamicImage.labeled == False)
+    statement = select(DynamicImage).where(DynamicImage.labeled is False)
     images = session.execute(statement).scalars().all()
 
-    # Iterate through images in pairs (assuming pairs are sequential)
     for i in range(0, len(images), 2):
         if i + 1 < len(images):
             thermal_image = images[i]
@@ -99,7 +78,7 @@ def update_dynamic_images(session: Session):
 
 
 def update_uploaded_images(session: Session):
-    statement = select(UploadedImages).where(UploadedImages.predicted_disease == None)
+    statement = select(UploadedImages).where(UploadedImages.labeled is False)
     images = session.exec(statement).all()
 
     for image in images:
@@ -107,7 +86,8 @@ def update_uploaded_images(session: Session):
         if result:
             disease_id = get_or_create_disease(session, result)
             image.predicted_disease = disease_id
-            session.add(image)
+        image.labeled = True
+        session.add(image)
 
     session.commit()
 
@@ -125,20 +105,48 @@ def schedule_updates():
 
 # schedule_updates()
 
+#
+# @router.get("/update_dynamic_now")
+# def update_dynamic_images_endpoint(session: Session = Depends(get_db)):
+#     update_dynamic_images(session)
+#     return {"message": "All images updated"}
+#
+#
+# @router.get("/update_offline_now")
+# def update_offline_images_endpoint(session: Session = Depends(get_db)):
+#     update_uploaded_images(session)
+#     return {"message": "All images updated"}
+#
+#
+# @router.get("/update_static_now")
+# def update_static_images_endpoint(session: Session = Depends(get_db)):
+#     update_static_images(session)
+#     return {"message": "All images updated"}
+def update_dynamic_images_task(session: Session):
+    update_dynamic_images(session)
+
+
+def update_offline_images_task(session: Session):
+    update_uploaded_images(session)
+
+
+def update_static_images_task(session: Session):
+    update_static_images(session)
+
 
 @router.get("/update_dynamic_now")
-def update_dynamic_images_endpoint(session: Session = Depends(get_db)):
-    update_dynamic_images(session)
-    return {"message": "All images updated"}
+def update_dynamic_images_endpoint(background_tasks: BackgroundTasks, session: Session = Depends(get_db)):
+    background_tasks.add_task(update_dynamic_images_task, session)
+    return {"message": "Dynamic images update started"}
 
 
 @router.get("/update_offline_now")
-def update_offline_images_endpoint(session: Session = Depends(get_db)):
-    update_uploaded_images(session)
-    return {"message": "All images updated"}
+def update_offline_images_endpoint(background_tasks: BackgroundTasks, session: Session = Depends(get_db)):
+    background_tasks.add_task(update_offline_images_task, session)
+    return {"message": "Offline images update started"}
 
 
 @router.get("/update_static_now")
-def update_static_images_endpoint(session: Session = Depends(get_db)):
-    update_static_images(session)
-    return {"message": "All images updated"}
+def update_static_images_endpoint(background_tasks: BackgroundTasks, session: Session = Depends(get_db)):
+    background_tasks.add_task(update_static_images_task, session)
+    return {"message": "Static images update started"}
