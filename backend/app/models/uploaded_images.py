@@ -13,6 +13,9 @@ class UploadedImages(SQLModel, table=True):
     file_url: str
     created_at: datetime = Field(nullable=False)
     updated_at: datetime = Field(nullable=False)
+    labeled: bool = Field(default=False)
+
+
 class UploadedImageOut(SQLModel):
     id: int
     predicted_disease: str
@@ -22,6 +25,8 @@ class UploadedImageOut(SQLModel):
     file_url: str
     created_at: datetime
     updated_at: datetime
+    labeled: bool
+
 
 class UploadedImagesOut(SQLModel):
     data: list[UploadedImageOut]

@@ -27,6 +27,7 @@ from app.models.static_images import *
 from app.models.uploaded_images import *
 from app.models.temperature import *
 from app.models.camera import *
+from app.models.application_settings import *
 
 target_metadata = SQLModel.metadata
 

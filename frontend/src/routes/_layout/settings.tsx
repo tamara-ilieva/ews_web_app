@@ -12,6 +12,7 @@ import { useQueryClient } from "react-query"
 
 import type { UserOut } from "../../client"
 import Appearance from "../../components/UserSettings/Appearance"
+import ApplicationSettings from "../../components/UserSettings/ApplicationSettings"
 import ChangePassword from "../../components/UserSettings/ChangePassword"
 import DeleteAccount from "../../components/UserSettings/DeleteAccount"
 import UserInformation from "../../components/UserSettings/UserInformation"
@@ -20,6 +21,7 @@ const tabsConfig = [
   { title: "My profile", component: UserInformation },
   { title: "Password", component: ChangePassword },
   { title: "Appearance", component: Appearance },
+  { title: "Application Settings", component: ApplicationSettings },
   { title: "Danger zone", component: DeleteAccount },
 ]
 
@@ -31,7 +33,7 @@ function UserSettings() {
   const queryClient = useQueryClient()
   const currentUser = queryClient.getQueryData<UserOut>("currentUser")
   const finalTabs = currentUser?.is_superuser
-    ? tabsConfig.slice(0, 3)
+    ? tabsConfig.slice(0, 4)
     : tabsConfig
 
   return (

@@ -13,6 +13,9 @@ class DynamicImage(SQLModel, table=True):
     file_url: str
     created_at: datetime = Field(nullable=False)
     updated_at: datetime = Field(nullable=False)
+    labeled: bool = Field(default=False)
+
+
 class DynamicImageOut(SQLModel):
     id: int
     average_temperature: float
@@ -23,6 +26,8 @@ class DynamicImageOut(SQLModel):
     file_url: str
     created_at: datetime
     updated_at: datetime
+    labeled: bool
+
 
 class DynamicImagesOut(SQLModel):
     data: list[DynamicImageOut]

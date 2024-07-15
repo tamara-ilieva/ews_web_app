@@ -13,6 +13,9 @@ class StaticImages(SQLModel, table=True):
     file_url: str
     created_at: datetime = Field(nullable=False)
     updated_at: datetime = Field(nullable=False)
+    labeled: bool = Field(default=False)
+
+
 class StaticImageOut(SQLModel):
     id: int
     predicted_disease: str
@@ -22,6 +25,8 @@ class StaticImageOut(SQLModel):
     file_url: str
     created_at: datetime
     updated_at: datetime
+    labeled: bool
+
 
 class StaticImagesOut(SQLModel):
     data: list[StaticImageOut]

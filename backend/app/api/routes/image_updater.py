@@ -1,5 +1,6 @@
 import datetime
 import random
+from typing import Optional
 
 from fastapi import APIRouter, Depends
 from sqlmodel import Session, select
@@ -16,6 +17,8 @@ from app.models.diseases import Diseases
 from app.models.temperature import Temperature
 
 router = APIRouter()
+
+
 #
 # def extract_temperatures(image_url):
 #     """
@@ -58,56 +61,45 @@ def update_static_images(session: Session):
     session.commit()
 
 
-def update_dynamic_images(session: Session):
-    # Select images with no predicted disease
-    statement = select(DynamicImage).where(DynamicImage.predicted_disease == None)
-    images = session.execute(statement).scalars().all()
+def get_temperatures(session: Session, image_id: int) -> Optional[Temperature]:
+    statement = select(Temperature).where(Temperature.image_id == image_id)
+    result = session.execute(statement).scalars().first()
+    return result
 
-    # Initialize previous temperatures
-    prev_temperatures = None
+
+def update_dynamic_images(session: Session):
+    statement = select(DynamicImage).where(DynamicImage.labeled == False)
+    images = session.execute(statement).scalars().all()
 
     # Iterate through images in pairs (assuming pairs are sequential)
     for i in range(0, len(images), 2):
         if i + 1 < len(images):
             thermal_image = images[i]
             optical_image = images[i + 1]
-
+            temperature_current = get_temperatures(session, thermal_image.id)
+            temperature_previous = get_temperatures(session,
+                                                    thermal_image.id - 1)
             is_sick, disease = is_plant_sick(thermal_image.file_url, optical_image.file_url,
-                                                prev_temperatures)
-            # if not current_temperatures or current_temperatures[0] <= 15.0 or current_temperatures[0] >= 40:
-            #     current_temperatures=[20.2+random.choice([0.5, 0.2, 0.1, 0.6, 0.7, 0.8])]
-            # print(is_sick, disease)
-            # print(current_temperatures)
-            # temperature1 = Temperature(average=current_temperatures[0]+5.6,
-            #                           current=current_temperatures[0],
-            #                           max=current_temperatures[0]+10.6,
-            #                           image_id=images[i].id,
-            #                           created_at=datetime.datetime.now(), updated_at=datetime.datetime.now())
-            #
-            # temperature2 = Temperature(average=current_temperatures[0] + 5.6,
-            #                           current=current_temperatures[0],
-            #                           max=current_temperatures[0] + 10.6,
-            #                           image_id=images[i+1].id,
-            #                           created_at=datetime.datetime.now(), updated_at=datetime.datetime.now())
-
-            # session.add(temperature1)
-            # session.add(temperature2)
-            # session.commit()
-            # continue
+                                             temperature_current, temperature_previous)
             if disease:
-                disease=disease[0]
+                disease = disease[0]
                 disease_id = get_or_create_disease(session, disease)
                 thermal_image.predicted_disease = disease_id
                 optical_image.predicted_disease = disease_id
 
             thermal_image.is_sick = is_sick
             optical_image.is_sick = is_sick
+            thermal_image.labeled = True
+            optical_image.labeled = True
 
             # session.add(thermal_image)
             # session.add(optical_image)
 
+            session.add(thermal_image)
+            session.add(optical_image)
 
-    session.commit()
+        session.commit()
+
 
 def update_uploaded_images(session: Session):
     statement = select(UploadedImages).where(UploadedImages.predicted_disease == None)
@@ -137,25 +129,19 @@ def schedule_updates():
 # schedule_updates()
 
 
-@router.get("/update_now")
-def update_all_images(session: Session = Depends(get_db)):
-    #update_static_images(session)
+@router.get("/update_dynamic_now")
+def update_dynamic_images_endpoint(session: Session = Depends(get_db)):
     update_dynamic_images(session)
-    #update_uploaded_images(session)
     return {"message": "All images updated"}
 
 
 @router.get("/update_offline_now")
-def update_offline_images(session: Session = Depends(get_db)):
-    #update_static_images(session)
-    #update_dynamic_images(session)
+def update_offline_images_endpoint(session: Session = Depends(get_db)):
     update_uploaded_images(session)
     return {"message": "All images updated"}
 
 
 @router.get("/update_static_now")
-def update_static_images(session: Session = Depends(get_db)):
+def update_static_images_endpoint(session: Session = Depends(get_db)):
     update_static_images(session)
-    #update_dynamic_images(session)
-    #update_uploaded_images(session)
     return {"message": "All images updated"}

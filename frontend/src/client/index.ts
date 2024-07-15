@@ -49,3 +49,4 @@ export { ImagesService } from './services/ImagesService';
 export { LoginService } from './services/LoginService';
 export { UsersService } from './services/UsersService';
 export { UtilsService } from './services/UtilsService';
+export { DroneService } from './services/DroneService';

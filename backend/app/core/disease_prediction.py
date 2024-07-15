@@ -1,3 +1,5 @@
+from typing import Optional, Tuple
+
 import requests
 
 from PIL import Image
@@ -6,6 +8,8 @@ from io import BytesIO
 import cv2
 import numpy as np
 from app.api.src.main import predict
+
+from app.models.temperature import Temperature
 
 
 def detect_sick_plant_thermal_image(image_url):
@@ -90,27 +94,40 @@ def extract_temperatures(image_url):
     else:
         raise Exception(f"Failed to download image from {image_url}")
 
-def is_plant_sick(thermal_image_url, optical_image_url, prev_temperatures, threshold=5.0):
+
+def is_plant_sick(thermal_image_url, optical_image_url, temperature_current: Temperature,
+                  temperature_previous: Temperature, threshold=2.5, weight_thermal=0.5, weight_temp_diff=0.5) -> Tuple[
+    bool, Optional[str]]:
     """
     Determine if the plant in the image is sick and predict the disease.
 
     :param thermal_image_url: URL of the thermal image.
     :param optical_image_url: URL of the optical image.
-    :param prev_temperatures: List of temperatures from the previous thermal image.
+    :param temperature_current: Current temperature data.
+    :param temperature_previous: Previous temperature data.
     :param threshold: Temperature difference threshold to determine sickness.
+    :param weight_thermal: Weight of thermal image analysis in sickness determination.
+    :param weight_temp_diff: Weight of temperature difference analysis in sickness determination.
     :return: Tuple containing is_sick (boolean) and disease (str or None).
     """
-    # Extract temperatures from the current thermal image
-    #current_temperatures = extract_temperatures(thermal_image_url))
-    is_sick = False
-    disease = None
+    # Analyze thermal image content
+    is_sick_thermal = detect_sick_plant_thermal_image(thermal_image_url)
 
-    # if prev_temperatures and current_temperatures:
-    #     max_temp_diff = max(abs(a - b) for a, b in zip(prev_temperatures, current_temperatures))
-    #     is_sick = max_temp_diff > threshold
-    is_sick = detect_sick_plant_thermal_image(thermal_image_url)
+    # Analyze temperature difference
+    is_sick_temp_diff = False
+    if temperature_previous and temperature_current:
+        temp_diff = abs(temperature_current.average - temperature_previous.average)
+        if temp_diff > threshold:
+            is_sick_temp_diff = True
+
+    # Combine the results using weights
+    combined_sickness_score = (weight_thermal * is_sick_thermal) + (weight_temp_diff * is_sick_temp_diff)
+
+    # Determine final sickness status based on combined score
+    is_sick = combined_sickness_score >= 0.5  # This threshold can be adjusted
+
+    disease = None
     if is_sick:
-         disease = get_disease_prediction(optical_image_url)
+        disease = get_disease_prediction(optical_image_url)
 
     return is_sick, disease
-
