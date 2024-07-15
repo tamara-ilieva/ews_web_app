@@ -1,4 +1,4 @@
-import { Box, Container, Image, SimpleGrid, Text } from "@chakra-ui/react"
+import { Box, Button, Container, Image, SimpleGrid, Text } from "@chakra-ui/react"
 import { createFileRoute } from "@tanstack/react-router"
 import { useQuery } from "react-query"
 import axios from "axios"
@@ -18,6 +18,11 @@ function Dashboard() {
   return (
     <Container maxW="full">
       <Box pt={12} m={4}>
+        <Box display="flex" justifyContent="space-between" mb={4}>
+          <Button colorScheme="blue" onClick={updateDynamicImages}>Update Dynamic Images</Button>
+          <Button colorScheme="blue" onClick={updateOfflineImages}>Update Offline Images</Button>
+          <Button colorScheme="blue" onClick={updateStaticImages}>Update Static Images</Button>
+        </Box>
         <SimpleGrid columns={2} spacing="10px">
           {data?.data.map((item) => (
             <Box key={item.id} borderWidth="1px" borderRadius="lg" overflow="hidden">
@@ -41,6 +46,33 @@ async function fetchDashboardImages() {
     }
   })
   return data
+}
+
+async function updateDynamicImages() {
+  await axios.get('http://localhost:8008/api/v1/predict/update_dynamic_now', {
+    headers: {
+      'accept': 'application/json'
+    }
+  })
+  alert("Dynamic images update started")
+}
+
+async function updateOfflineImages() {
+  await axios.get('http://localhost:8008/api/v1/predict/update_offline_now', {
+    headers: {
+      'accept': 'application/json'
+    }
+  })
+  alert("Offline images update started")
+}
+
+async function updateStaticImages() {
+  await axios.get('http://localhost:8008/api/v1/predict/update_static_now', {
+    headers: {
+      'accept': 'application/json'
+    }
+  })
+  alert("Static images update started")
 }
 
 export default Dashboard
