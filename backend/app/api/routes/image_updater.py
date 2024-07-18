@@ -26,7 +26,7 @@ def get_or_create_disease(session: Session, disease_name: str, remedy: str = '/'
 
 
 def update_static_images(session: Session):
-    statement = select(StaticImages).where(StaticImages.labeled is False)
+    statement = select(StaticImages).where(StaticImages.labeled == False)
     images = session.exec(statement).all()
 
     for image in images:
@@ -48,8 +48,9 @@ def get_temperatures(session: Session, image_id: int) -> Optional[Temperature]:
 
 
 def update_dynamic_images(session: Session):
-    statement = select(DynamicImage).where(DynamicImage.labeled is False)
+    statement = select(DynamicImage).where(DynamicImage.labeled == False)
     images = session.execute(statement).scalars().all()
+    print(len(images))
 
     for i in range(0, len(images), 2):
         if i + 1 < len(images):
@@ -78,7 +79,7 @@ def update_dynamic_images(session: Session):
 
 
 def update_uploaded_images(session: Session):
-    statement = select(UploadedImages).where(UploadedImages.labeled is False)
+    statement = select(UploadedImages).where(UploadedImages.labeled == False)
     images = session.exec(statement).all()
 
     for image in images:
@@ -105,7 +106,7 @@ def schedule_updates():
 
 # schedule_updates()
 
-#
+
 # @router.get("/update_dynamic_now")
 # def update_dynamic_images_endpoint(session: Session = Depends(get_db)):
 #     update_dynamic_images(session)
