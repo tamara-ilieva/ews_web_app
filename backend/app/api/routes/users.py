@@ -46,7 +46,7 @@ def read_users(session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
 
 
 @router.post(
-    "/", dependencies=[Depends(get_current_active_superuser)], response_model=UserOut
+    "/", response_model=UserOut
 )
 def create_user(*, session: SessionDep, user_in: UserCreate) -> Any:
     """

@@ -27,18 +27,35 @@ def get_or_create_disease(session: Session, disease_name: str, remedy: str = '/'
 
 def update_static_images(session: Session):
     statement = select(StaticImages).where(StaticImages.labeled == False)
-    images = session.exec(statement).all()
+    images = session.execute(statement).scalars().all()
 
-    for image in images:
-        is_sick_thermal = detect_sick_plant_thermal_image(image.file_url)
-        if is_sick_thermal:
-            result, remedy = predict(image.file_url)
-            if result:
-                disease_id = get_or_create_disease(session, result)
-                image.predicted_disease = disease_id
-        image.labeled = True
-        session.add(image)
+    for i in range(0, len(images), 2):
+        if i + 1 < len(images):
+            thermal_image = images[i]
+            optical_image = images[i + 1]
+            is_sick_thermal = detect_sick_plant_thermal_image(thermal_image.file_url)
+
+            if is_sick_thermal:
+                result, remedy = predict(thermal_image.file_url)
+                if result:
+                    disease_id = get_or_create_disease(session, result)
+                    thermal_image.predicted_disease = disease_id
+                    optical_image.predicted_disease = disease_id
+
+                thermal_image.is_sick = True
+                optical_image.is_sick = True
+            else:
+                thermal_image.is_sick = False
+                optical_image.is_sick = False
+
+            thermal_image.labeled = True
+            optical_image.labeled = True
+
+            session.add(thermal_image)
+            session.add(optical_image)
+
     session.commit()
+
 
 
 def get_temperatures(session: Session, image_id: int) -> Optional[Temperature]:

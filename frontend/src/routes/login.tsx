@@ -130,6 +130,13 @@ function Login() {
         <Button variant="primary" type="submit" isLoading={isSubmitting}>
           Log In
         </Button>
+        <Center>
+            <Link as={RouterLink} to="/register">
+                <Button variant="outlined" color="green" type="submit" isLoading={isSubmitting}>
+                    Register
+                </Button>
+            </Link>
+        </Center>
       </Container>
     </>
   )
