@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 from email.mime.image import MIMEImage
 
+from app.models.models import User
 from app.api.deps import SessionDep
 from app.api.deps import get_db
 from app.api.src.main import predict
@@ -362,33 +363,35 @@ async def get_disease_prediction(image: UploadFile):
     base64_string = base64.b64encode(image_data).decode('utf-8')
     response = predict(base64_string)
 
-    # Assuming response['prediction'] contains the predicted disease
-    if response.get('prediction') != 'Tomato_healthy':
-        mailto = 'tamarailieva@live.com'  # Email address to send the notification
-        await send_notification(mailto, image_data)
-    #     mailto = 'ivan.trifunov@outlook.com'  # Email address to send the notification
+    # if response.get('prediction') != 'Tomato_healthy':
+    #     mailto = 'tamarailieva@live.com'
     #     await send_notification(mailto, image_data)
 
     return {"response": response}
 
 
-async def send_notification(email_receiver: str, image_data: bytes):
+async def send_notification(user: User, optical_image_data: bytes, thermal_image_data: bytes = None,
+                            disease: str = None):
     email_sender = 'ews_webapi@outlook.com'
     email_password = 'Ews_Api_Web'
 
-    subject = 'Известување за болно растение!!!'
-    body = 'Your plant appears to be sick. Please take necessary action.'
+    subject = 'Известување за болно растение!'
+    body = (
+        f'Здраво {user.full_name}.\nПостои сомневање дека вашето растение е болно, ве молиме преземете соодветни акции. '
+        f'Потенцијална болест: {disease}')
 
     # Create a MIMEText object to represent the email content
     message = MIMEMultipart()
     message['From'] = email_sender
-    message['To'] = email_receiver
+    message['To'] = user.email
     message['Subject'] = subject
     message.attach(MIMEText(body, 'plain'))
 
     # Attach the image to the email
-    image = MIMEImage(image_data, name='sick_plant_image.png')
-    message.attach(image)
+    thermal_image = MIMEImage(thermal_image_data, name='thermal_sick_plant_image.png')
+    optical_image = MIMEImage(optical_image_data, name='optical_sick_plant_image.png')
+    message.attach(thermal_image)
+    message.attach(optical_image)
 
     # Connect to the Outlook SMTP server
     smtp_server = 'smtp.office365.com'  # For Outlook/Office 365
@@ -399,7 +402,7 @@ async def send_notification(email_receiver: str, image_data: bytes):
         server.starttls()  # Enable encryption
         server.login(email_sender, email_password)
         text = message.as_string()
-        server.sendmail(email_sender, email_receiver, text)
+        server.sendmail(email_sender, user.email, text)
     except Exception as e:
         print(f'Failed to send email. Error: {str(e)}')
     finally:

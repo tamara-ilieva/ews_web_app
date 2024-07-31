@@ -1,11 +1,14 @@
 from typing import Optional
 
+import aiohttp
 from app.api.deps import get_db
+from app.api.routes.base import send_notification
 from app.api.src.main import predict
 from app.core.disease_prediction import detect_sick_plant_thermal_image
 from app.core.disease_prediction import is_plant_sick
 from app.models.diseases import Diseases
 from app.models.dynamic_images import DynamicImage
+from app.models.models import User
 from app.models.static_images import StaticImages
 from app.models.temperature import Temperature
 from app.models.uploaded_images import UploadedImages
@@ -57,17 +60,23 @@ def update_static_images(session: Session):
     session.commit()
 
 
-
 def get_temperatures(session: Session, image_id: int) -> Optional[Temperature]:
     statement = select(Temperature).where(Temperature.image_id == image_id)
     result = session.execute(statement).scalars().first()
     return result
 
 
-def update_dynamic_images(session: Session):
+async def fetch_image_data(url: str) -> bytes:
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            return await response.read()
+
+
+async def update_dynamic_images(session: Session):
     statement = select(DynamicImage).where(DynamicImage.labeled == False)
     images = session.execute(statement).scalars().all()
-    print(len(images))
+    users_statement = select(User)
+    users = session.execute(users_statement).scalars().all()
 
     for i in range(0, len(images), 2):
         if i + 1 < len(images):
@@ -83,6 +92,10 @@ def update_dynamic_images(session: Session):
                 disease_id = get_or_create_disease(session, disease)
                 thermal_image.predicted_disease = disease_id
                 optical_image.predicted_disease = disease_id
+                thermal_image_data = await fetch_image_data(thermal_image.file_url)
+                optical_image_data = await fetch_image_data(optical_image.file_url)
+                for user in users:
+                    await send_notification(user, optical_image_data, thermal_image_data, disease)
 
             thermal_image.is_sick = is_sick
             optical_image.is_sick = is_sick
@@ -140,16 +153,16 @@ def schedule_updates():
 # def update_static_images_endpoint(session: Session = Depends(get_db)):
 #     update_static_images(session)
 #     return {"message": "All images updated"}
-def update_dynamic_images_task(session: Session):
-    update_dynamic_images(session)
+async def update_dynamic_images_task(session: Session):
+    await update_dynamic_images(session)
 
 
-def update_offline_images_task(session: Session):
-    update_uploaded_images(session)
+async def update_offline_images_task(session: Session):
+    await update_uploaded_images(session)
 
 
-def update_static_images_task(session: Session):
-    update_static_images(session)
+async def update_static_images_task(session: Session):
+    await update_static_images(session)
 
 
 @router.get("/update_dynamic_now")

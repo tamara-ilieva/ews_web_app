@@ -28,7 +28,7 @@ const SidebarItems: React.FC<SidebarItemsProps> = ({ onClose }) => {
   const currentUser = queryClient.getQueryData<UserOut>("currentUser")
 
   const finalItems = currentUser?.is_superuser
-    ? [...items, { icon: FiUsers, title: "Admin", path: "/admin" }]
+    ? [...items, { icon: FiUsers, title: "Team", path: "/admin" }]
     : items
 
   const listItems = finalItems.map((item) => (
