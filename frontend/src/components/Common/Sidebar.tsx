@@ -54,7 +54,7 @@ const Sidebar: React.FC = () => {
           <DrawerBody py={8}>
             <Flex flexDir="column" justify="space-between">
               <Box>
-                <Image src={FITRLogo} alt="logo" p={6} />
+                <Image src={Logo} alt="logo" p={6} />
                 <SidebarItems onClose={onClose} />
                 <Image src={FITRLogo} alt="logo" p={6} />
 
@@ -99,6 +99,8 @@ const Sidebar: React.FC = () => {
           <Box>
             <Image src={Logo} alt="Logo" w="180px" maxW="2xs" p={6} />
             <SidebarItems />
+            <Image src={FITRLogo} alt="Logo" w="180px" maxW="2xs" p={6} />
+
           </Box>
           {currentUser?.email && (
             <Text
