@@ -1,3 +1,4 @@
+import React, { useState } from "react";
 import {
   Container,
   Flex,
@@ -12,16 +13,19 @@ import {
   Tr,
   Button,
   Image as ChakraImage,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalBody,
+  ModalCloseButton,
+  useDisclosure,
 } from "@chakra-ui/react";
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "react-query";
-
+import { useQuery, useMutation, useQueryClient } from "react-query";
 import { type ApiError, ImagesService } from "../../client";
-import ActionsMenu from "../../components/Common/ActionsMenu";
-import Navbar from "../../components/Common/Navbar";
 import useCustomToast from "../../hooks/useCustomToast";
-import React from "react";
 import DiseaseDropdown from "../../components/Diseases/DiseasesDropdown";
+import Navbar from "../../components/Common/Navbar";
 
 export const Route = createFileRoute("/_layout/uploaded_images")({
   component: UploadedImages,
@@ -29,12 +33,89 @@ export const Route = createFileRoute("/_layout/uploaded_images")({
 
 function UploadedImages() {
   const showToast = useCustomToast();
-  const {
-    data: imagesData,
-    isLoading,
-    isError,
-    error,
-  } = useQuery("images", () => ImagesService.getUploadedImages());
+  const queryClient = useQueryClient();
+  const [selectedImage, setSelectedImage] = useState(null);
+  const { isOpen, onOpen, onClose } = useDisclosure();
+
+  const { data: imagesData, isLoading, isError, error } = useQuery("images", () =>
+    ImagesService.getUploadedImages()
+  );
+
+  const changeIsSickMutation = useMutation(
+    ({ type, image_id, is_sick_human_input }) =>
+      ImagesService.changeIsSick(type, image_id, is_sick_human_input),
+    {
+      onMutate: async ({ image_id, is_sick_human_input }) => {
+        await queryClient.cancelQueries("images");
+
+        const previousImages = queryClient.getQueryData("images");
+
+        queryClient.setQueryData("images", (old) => ({
+          ...old,
+          data: old.data.map((image) =>
+            image.id === image_id ? { ...image, is_sick_human_input } : image
+          ),
+        }));
+
+        return { previousImages };
+      },
+      onError: (err, variables, context) => {
+        showToast("Error", "Failed to update image.", "error");
+        queryClient.setQueryData("images", context.previousImages);
+      },
+      onSettled: () => {
+        queryClient.invalidateQueries("images");
+      },
+      onSuccess: () => {
+        showToast("Success!", "Image updated successfully.", "success");
+      },
+    }
+  );
+
+  const changeDiseaseMutation = useMutation(
+    ({ type, image_id, disease_id }) =>
+      ImagesService.changeDisease(type, image_id, disease_id),
+    {
+      onMutate: async ({ image_id, disease_id }) => {
+        await queryClient.cancelQueries("images");
+
+        const previousImages = queryClient.getQueryData("images");
+
+        queryClient.setQueryData("images", (old) => ({
+          ...old,
+          data: old.data.map((image) =>
+            image.id === image_id ? { ...image, predicted_disease_human_input: disease_id } : image
+          ),
+        }));
+
+        return { previousImages };
+      },
+      onError: (err, variables, context) => {
+        showToast("Error", "Failed to update image.", "error");
+        queryClient.setQueryData("images", context.previousImages);
+      },
+      onSettled: () => {
+        queryClient.invalidateQueries("images");
+      },
+      onSuccess: () => {
+        showToast("Success!", "Image updated successfully.", "success");
+      },
+    }
+  );
+
+  const handleIsSickChange = (type, image_id, is_sick_human_input) => {
+    changeIsSickMutation.mutate({ type, image_id, is_sick_human_input });
+  };
+
+  const handleDiseaseChange = (type, image_id, event) => {
+    const disease_id = parseInt(event.target.value, 10);
+    changeDiseaseMutation.mutate({ type, image_id, disease_id });
+  };
+
+  const handleImageClick = (image) => {
+    setSelectedImage(image);
+    onOpen();
+  };
 
   const images = imagesData ? imagesData.data : [];
 
@@ -58,7 +139,7 @@ function UploadedImages() {
             <p> These images are uploaded offline </p>
             <Navbar type={"OfflineImage"} />
             <TableContainer>
-                   <Table size={{ base: "sm", md: "md" }}>
+              <Table size={{ base: "sm", md: "md" }}>
                 <Thead>
                   <Tr>
                     <Th>ID</Th>
@@ -103,7 +184,9 @@ function UploadedImages() {
                       <Td>
                         <DiseaseDropdown
                           selectedDisease={image.predicted_disease_human_input}
-                          onDiseaseChange={(disease_id) => handleDiseaseChange("dynamic", image.id, { target: { value: disease_id } })}
+                          onDiseaseChange={(disease_id) =>
+                            handleDiseaseChange("uploaded", image.id, { target: { value: disease_id } })
+                          }
                         />
                       </Td>
                       <Td>{new Date(image.created_at).toLocaleDateString()}</Td>
@@ -112,6 +195,19 @@ function UploadedImages() {
                 </Tbody>
               </Table>
             </TableContainer>
+
+            {/* Image Modal */}
+            {selectedImage && (
+              <Modal isOpen={isOpen} onClose={onClose} size="full">
+                <ModalOverlay />
+                <ModalContent>
+                  <ModalCloseButton />
+                  <ModalBody>
+                    <img src={selectedImage.file_url} alt="Disease" style={{ width: '100%' }} />
+                  </ModalBody>
+                </ModalContent>
+              </Modal>
+            )}
           </Container>
         )
       )}

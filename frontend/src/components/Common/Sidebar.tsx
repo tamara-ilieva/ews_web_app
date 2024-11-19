@@ -17,6 +17,7 @@ import { FiLogOut, FiMenu } from "react-icons/fi"
 import { useQueryClient } from "react-query"
 
 import Logo from "../../assets/images/EWS-Logo.png"
+import FITRLogo from "../../assets/images/FITR_Logo.jpg"
 import type { UserOut } from "../../client"
 import useAuth from "../../hooks/useAuth"
 import SidebarItems from "./SidebarItems"
@@ -53,8 +54,10 @@ const Sidebar: React.FC = () => {
           <DrawerBody py={8}>
             <Flex flexDir="column" justify="space-between">
               <Box>
-                <Image src={Logo} alt="logo" p={6} />
+                <Image src={FITRLogo} alt="logo" p={6} />
                 <SidebarItems onClose={onClose} />
+                <Image src={FITRLogo} alt="logo" p={6} />
+
                 <Flex
                   as="button"
                   onClick={handleLogout}
